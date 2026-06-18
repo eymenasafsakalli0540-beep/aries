@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify
 from google import genai
 import base64
 import os
@@ -7,13 +7,11 @@ app = Flask(__name__, template_folder='templates')
 app.secret_key = 'aries_eymen_ozel_anahtar_2026'
 
 # --- GOOGLE GEMINI API KEYİNİ BURAYA YAPIŞTIR KANKA ---
-# Google AI Studio'dan aldığın AIzaSy... diye başlayan şifreni buraya koy
-API_KEY = "BURAYA_ALDIĞIN_API_KEYİ_YAPIŞTIR"
+API_KEY = "AQ.Ab8RN6LMJSzGjjMbBZ2sX3IzFylNAHBa0ltoSI8zmvC1Nxai7Q"
 client = genai.Client(api_key=API_KEY)
 
 @app.route('/')
 def ana_sayfa():
-    # Giriş sistemi falan uğraşmadan direkt sade arayüze bağladık
     return render_template('index.html', kullanici="Eymen")
 
 @app.route('/sor', methods=['POST'])
@@ -26,7 +24,6 @@ def sor():
             return jsonify({'cevap': 'Bir şey yazmadın kanka?', 'tip': 'metin'})
 
         soru_alt = soru.lower()
-        # Eğer kullanıcı resim/çizim istiyorsa Imagen modelini tetikliyoruz
         if "çiz" in soru_alt or "resim" in soru_alt or "görsel" in soru_alt or "fotoğraf" in soru_alt:
             try:
                 gorsel_response = client.models.generate_images(
@@ -41,7 +38,6 @@ def sor():
             except Exception as img_err:
                 return jsonify({'cevap': f"Resim çizemedim kanka, hata: {str(img_err)}", 'tip': 'metin'})
 
-        # Normal sohbet soruları için Gemini devrede
         response = client.models.generate_content(
             model='gemini-2.0-flash',
             contents=f"Senin adın Aries. Eymen Safa Sakallı tarafından geliştirilmiş çok zeki bir yapay zekasın. Karşındaki kişiye samimi, havalı ama net cevaplar ver. Soru: {soru}"
