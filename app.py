@@ -1,13 +1,12 @@
 from flask import Flask, render_template, request, jsonify
 from google import genai
-import base64
 import os
 
 app = Flask(__name__, template_folder='templates')
-app.secret_key = 'aries_eymen_ozel_anahtar_2026'
+app.secret_key = 'aries_eymen_saf_ders_canavari_2026'
 
 # --- GOOGLE GEMINI API KEYİNİ BURAYA YAPIŞTIR KANKA ---
-API_KEY = "AQ.Ab8RN6LMJSzGjjMbBZ2sX3IzFylNAHBa0ltoSI8zmvC1Nxai7Q"
+API_KEY = "AQ.Ab8RN6Iri4dDxyF-UZgI_PuWQDM8bAxfhEfdWX9iEy6RCoK5Sw"
 client = genai.Client(api_key=API_KEY)
 
 @app.route('/')
@@ -21,31 +20,24 @@ def sor():
         soru = veri.get('soru', '').strip()
         
         if not soru:
-            return jsonify({'cevap': 'Bir şey yazmadın kanka?', 'tip': 'metin'})
+            return jsonify({'cevap': 'Bir şey yazmadın kanka?'})
 
-        soru_alt = soru.lower()
-        if "çiz" in soru_alt or "resim" in soru_alt or "görsel" in soru_alt or "fotoğraf" in soru_alt:
-            try:
-                gorsel_response = client.models.generate_images(
-                    model='imagen-3.0-generate-002',
-                    prompt=soru,
-                    config=dict(number_of_images=1, output_mime_type="image/jpeg")
-                )
-                for resim in gorsel_response.generated_images:
-                    resim_base64 = resim.image.image_bytes
-                    encoded = base64.b64encode(resim_base64).decode('utf-8')
-                    return jsonify({'cevap': f"data:image/jpeg;base64,{encoded}", 'tip': 'resim'})
-            except Exception as img_err:
-                return jsonify({'cevap': f"Resim çizemedim kanka, hata: {str(img_err)}", 'tip': 'metin'})
+        # Aries'e tüm derslerde (Matematik, Tarih, Coğrafya, Fen, Türkçe, İngilizce) uzmanlık yüklüyoruz
+        ders_talimati = (
+            "Senin adın Aries. Eymen Safa Sakallı tarafından geliştirilmiş dahi bir yapay zekasın. "
+            "Matematik, Fen Bilimleri, Türkçe, İngilizce, Sosyal Bilgiler, Tarih ve Coğrafya başta olmak üzere tüm okul derslerinde tam bir uzmansın. "
+            "Sorulan sorulara bir öğretmen kadar doğru, net ve anlaşılır cevaplar vermelisin. "
+            "Aynı zamanda Eymen'e karşı her zaman çok samimi, motive edici ve havalı bir dost gibi davranmalısın."
+        )
 
         response = client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=f"Senin adın Aries. Eymen Safa Sakallı tarafından geliştirilmiş çok zeki bir yapay zekasın. Karşındaki kişiye samimi, havalı ama net cevaplar ver. Soru: {soru}"
+            contents=f"{ders_talimati}\n\nKullanıcıdan gelen soru: {soru}"
         )
-        return jsonify({'cevap': response.text, 'tip': 'metin'})
+        return jsonify({'cevap': response.text})
         
     except Exception as e:
-        return jsonify({'cevap': f"Bağlantı hatası kanka: {str(e)}", 'tip': 'metin'})
+        return jsonify({'cevap': f"Bağlantı hatası kanka: {str(e)}"})
 
 if __name__ == '__main__':
     app.run(debug=True)
