@@ -42,15 +42,19 @@
         #chat-flow::-webkit-scrollbar { width: 4px; }
         #chat-flow::-webkit-scrollbar-thumb { background: #333; }
 
+        /* Grup ve Balon Düzeni */
+        .ai-msg-group { display: flex; flex-direction: column; align-self: flex-start; gap: 6px; max-width: 85%; }
+        .msg-logo { width: 32px; height: 32px; margin-left: 5px; } /* Balonun üstündeki logo boyutu */
+
         .bubble { max-width: 85%; padding: 18px; border-radius: 18px; line-height: 1.6; animation: fadeInUp 0.3s ease; }
-        .ai { background: #0c0c0e; border: 1px solid var(--border); align-self: flex-start; border-left: 4px solid var(--accent); }
+        .ai { background: #0c0c0e; border: 1px solid var(--border); align-self: flex-start; border-left: 4px solid var(--accent); max-width: 100%; }
         .user { background: #18181b; align-self: flex-end; border-right: 4px solid #38bdf8; }
 
         .input-holder { padding: 20px 15% 40px; }
         .input-box { background: #111; border: 1px solid #222; border-radius: 15px; padding: 12px 25px; display: flex; gap: 15px; align-items: center; }
         input { background: transparent; border: none; color: white; flex-grow: 1; outline: none; font-size: 16px; }
 
-        /* Backend'den gelecek dinamik rozet tasarımları için ek CSS */
+        /* Backend Rozetleri */
         .expert-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
         .badge-sozel { background-color: #ff5722; color: white; }
         .badge-sayisal { background-color: #4caf50; color: white; }
@@ -76,7 +80,13 @@
             </header>
 
             <div id="chat-flow">
-                <div class="bubble ai"><b>ARIES AI:</b> Merhaba <b>TÜW</b>. Web sitemiz yayına hazır. Tüm motorlar aktif edildi. Seni dinliyorum kanka.</div>
+                <div class="ai-msg-group">
+                    <svg class="msg-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 40,130 A 65,65 0 0,1 160,130" stroke="#00E5FF" stroke-width="14" stroke-linecap="round" fill="none" />
+                        <circle cx="100" cy="130" r="18" fill="#00E5FF" />
+                    </svg>
+                    <div class="bubble ai"><b>ARIES AI:</b> Merhaba <b>TÜW</b>. Web sitemiz yayına hazır. Tüm motorlar aktif edildi. Seni dinliyorum kanka.</div>
+                </div>
             </div>
 
             <div class="input-holder">
@@ -89,18 +99,26 @@
     </div>
 
     <script>
+        // Ortak SVG logo şablonumuz
+        const logoSvgTemplate = `
+            <svg class="msg-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 40,130 A 65,65 0 0,1 160,130" stroke="#00E5FF" stroke-width="14" stroke-linecap="round" fill="none" />
+                <circle cx="100" cy="130" r="18" fill="#00E5FF" />
+            </svg>
+        `;
+
         function send() {
             const input = document.getElementById('userInput');
             const flow = document.getElementById('chat-flow');
             const val = input.value.trim();
             if(!val) return;
 
-            // Kullanıcının yazdığı mesajı ekrana basıyoruz
+            // Kullanıcının mesajı sağa ekleniyor
             flow.innerHTML += `<div class="bubble user"><b>TÜW:</b><br>${val}</div>`;
             flow.scrollTop = flow.scrollHeight;
             input.value = "";
 
-            // 🎯 Burası backend (app.py) ile konuşan akıllı JSON kısmı:
+            // Backend'e istek atılıyor
             fetch('/ask', {
                 method: 'POST',
                 headers: {
@@ -110,13 +128,23 @@
             })
             .then(response => response.json())
             .then(data => {
-                // app.py'den gelen reply verisini akıllıca ekrana ekler
-                flow.innerHTML += `<div class="bubble ai"><b>ARIES AI:</b><br>${data.reply}</div>`;
+                // ARIES AI yanıt grubu oluşturuluyor (Logo + Balon)
+                flow.innerHTML += `
+                    <div class="ai-msg-group">
+                        ${logoSvgTemplate}
+                        <div class="bubble ai"><b>ARIES AI:</b><br>${data.reply}</div>
+                    </div>
+                `;
                 flow.scrollTop = flow.scrollHeight;
             })
             .catch(error => {
                 console.error('Hata:', error);
-                flow.innerHTML += `<div class="bubble ai" style="border-left: 4px solid red;"><b>Sistem Hatası:</b> Bağlantı kurulamadı kanka.</div>`;
+                flow.innerHTML += `
+                    <div class="ai-msg-group">
+                        ${logoSvgTemplate}
+                        <div class="bubble ai" style="border-left: 4px solid red;"><b>Sistem Hatası:</b> Bağlantı kurulamadı kanka.</div>
+                    </div>
+                `;
                 flow.scrollTop = flow.scrollHeight;
             });
         }
