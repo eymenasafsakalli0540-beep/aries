@@ -5,125 +5,132 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARIES AI</title>
     <style>
-        /* Modern ve Koyu Gemini Teması */
+        /* 🎨 TASARIM (CSS) BÖLÜMÜ - Tek Dosyada Birleşik */
         body {
             margin: 0;
             padding: 0;
-            background-color: #121216; /* Çok koyu gri/siyah arka plan */
-            /* Hafif lacivert modern geçiş */
-            background-image: 
-                radial-gradient(at 50% 100%, #1a2236 0px, transparent 50%),
-                radial-gradient(at 50% -20%, #1e284a 0px, transparent 50%);
-            color: #e3e3e3;
+            background-color: #0c0d0f; /* Simsiyah modern arka plan */
+            color: #ffffff;
             font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sol taraftaki menü paneli (Sidebar) */
+        .sidebar {
+            width: 260px;
+            background-color: #090a0c;
+            border-right: 3px solid #00bcff; /* Senin o kalın mavi çizgin */
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* Sol üstteki logon ve başlığın */
+        .logo-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        .logo-img {
+            width: 80px; /* Senin gönderdiğin logonun boyutu */
+            margin-bottom: 10px;
+        }
+        .logo-title {
+            color: #00bcff; /* Mavi başlığın */
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        /* "Yeni Sohbet" butonu */
+        .new-chat-btn {
+            border: 2px solid #ffffff;
+            border-radius: 20px;
+            background: transparent;
+            color: #ffffff;
+            padding: 10px 20px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .new-chat-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Sağ taraftaki ana sohbet alanı */
+        .main-content {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 40px;
+            position: relative;
         }
 
-        /* Merkeze Odaklanmış Ana Alan */
-        .main-container {
-            width: 90%;
-            max-width: 800px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        /* Tam ortadaki büyük logon */
+        .center-logo {
+            width: 160px; /* Ortadaki logonun boyutu */
+            margin-bottom: 30px;
         }
 
-        /* 👑 Karşılama Başlığı */
+        /* Ortadaki "Ne sormak ister siniz" başlığın */
         .welcome-title {
-            font-size: 3rem;
-            font-weight: 300; /* Çok ince ve modern */
-            margin-bottom: 50px;
-            letter-spacing: -1px;
+            font-size: 3.5rem;
+            font-weight: 300;
+            color: #ffffff;
+            margin: 0 0 50px 0;
+            letter-spacing: -2px;
         }
 
-        /* Gemini Tarzı Yuvarlak Giriş Alanı */
-        .search-bar {
+        /* Alttaki geniş input kutusu */
+        .input-form {
             width: 100%;
-            background-color: #26262d;
-            border-radius: 50px; /* Tam yuvarlak köşeler */
-            padding: 10px 20px;
+            max-width: 900px;
             display: flex;
             align-items: center;
             position: relative;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-            box-sizing: border-box;
         }
-
-        .search-bar:hover, .search-bar:focus-within {
-            background-color: #2e2e36;
-            box-shadow: 0 6px 10px rgba(0,0,0,0.3);
-        }
-
-        /* Sol taraftaki Artı (+) Simgesi */
-        .plus-icon {
-            color: #a0a0a0;
-            font-size: 1.5rem;
-            margin-right: 15px;
-            cursor: pointer;
-        }
-
-        /* Giriş Kutusu */
         .chat-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #e3e3e3;
-            font-size: 1.2rem;
+            width: 100%;
+            padding: 20px 30px;
+            background-color: transparent;
+            border: 2px solid #ffffff;
+            border-radius: 40px; /* Tam yuvarlak köşeler */
+            color: #ffffff;
+            font-size: 1.4rem;
             outline: none;
-            padding: 10px 0;
-            font-weight: 300;
+            text-align: left;
         }
-
         .chat-input::placeholder {
             color: #757575;
-            font-weight: 300;
-        }
-
-        /* Sağ taraftaki Flash ve Mikrofon Grubu */
-        .right-icons {
-            display: flex;
-            align-items: center;
-            color: #757575;
-            gap: 15px;
-        }
-
-        .flash-text {
-            font-size: 0.9rem;
-            font-weight: 400;
-            cursor: pointer;
-        }
-
-        .mic-icon {
-            font-size: 1.3rem;
-            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <div class="main-container">
+    <div class="sidebar">
+        <div class="logo-group">
+            <img src="{{ url_for('static', filename='image_5.png') }}" alt="ARIES Logo" class="logo-img">
+            <h1 class="logo-title">ARIES AI</h1>
+        </div>
+        <button class="new-chat-btn" onclick="window.location.reload()">Yeni Sohbet</button>
+    </div>
+
+    <div class="main-content">
+        <img src="{{ url_for('static', filename='image_5.png') }}" alt="ARIES Logo" class="center-logo">
         
-        <h1 class="welcome-title">Ne sormak istersiniz</h1>
+        <h1 class="welcome-title">Ne sormak ister siniz</h1>
 
-        <form action="/ask" method="POST" class="search-bar">
-            
-            <span class="plus-icon">&#65291;</span>
-            
-            <input type="text" name="message" class="chat-input" placeholder="Ne sormak istersiniz" required autofocus>
-            
-            <div class="right-icons">
-                <span class="flash-text">Flash &#9661;</span>
-                <span class="mic-icon">&#127897;</span>
-            </div>
-
+        <form action="/ask" method="POST" class="input-form">
+            <input type="text" name="message" class="chat-input" placeholder="Ne sormak fitser siniz..." required autofocus>
         </form>
-
     </div>
 
 </body>
