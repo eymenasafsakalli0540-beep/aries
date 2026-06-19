@@ -2,235 +2,50 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARIES AI</title>
-    <style>
-        /* 🎨 EYMEN'İN EFSANE TASARIMI (CSS) BÖLÜMÜ */
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #0c0d0f; /* Simsiyah modern arka plan */
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            height: 100vh;
-            display: flex;
-            overflow: hidden;
-        }
-
-        /* Sol taraftaki menü paneli (Sidebar) */
-        .sidebar {
-            width: 240px;
-            background-color: #000000;
-            border-right: 4px solid #00bcff; /* Kalın mavi şerit */
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex-shrink: 0;
-            box-sizing: border-box;
-            position: relative;
-        }
-
-        /* Tasarımdaki logonun yanındaki ince dikey çizgi */
-        .sidebar::after {
-            content: "";
-            position: absolute;
-            right: -10px;
-            top: 15%;
-            height: 25%;
-            width: 1px;
-            background-color: rgba(255, 255, 255, 0.4);
-        }
-
-        .logo-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-        
-        /* Çizim SVG Logoların Boyutları */
-        .logo-svg {
-            width: 120px;
-            height: 120px;
-            display: block;
-        }
-        
-        .logo-title {
-            color: #00bcff; 
-            font-size: 1.4rem;
-            font-weight: bold;
-            margin: 10px 0 0 0;
-            letter-spacing: 1px;
-        }
-
-        /* "Yeni Sohbet" butonu */
-        .new-chat-btn {
-            border: 2px solid #ffffff;
-            border-radius: 25px;
-            background: transparent;
-            color: #ffffff;
-            padding: 10px 20px;
-            width: 100%;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .new-chat-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Sağ taraftaki ana içerik alanı */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            background-color: #121316;
-            position: relative;
-        }
-
-        .main-content .logo-svg {
-            width: 180px;
-            height: 180px;
-            margin-bottom: 10px;
-        }
-
-        /* Ortadaki büyük "Ne sormak ister siniz" yazısı */
-        .welcome-title {
-            font-size: 4rem;
-            font-weight: bold;
-            color: #ffffff;
-            margin: 0 0 40px 0;
-            text-align: center;
-        }
-
-        /* Alttaki bembeyaz parlayan geniş input alanı */
-        .input-container {
-            width: 100%;
-            max-width: 950px;
-            position: relative;
-        }
-        
-        .chat-input {
-            width: 100%;
-            padding: 18px 30px;
-            background-color: transparent;
-            border: 3px solid #ffffff; /* Beyaz kalın çizgili kutu */
-            border-radius: 50px; 
-            color: #ffffff;
-            font-size: 1.5rem;
-            outline: none;
-            box-sizing: border-box;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-        }
-
-        /* Yapay zekanın verdiği cevapların görüneceği şık panel alanı */
-        .response-box {
-            width: 100%;
-            max-width: 950px;
-            margin-top: 25px;
-            padding: 20px;
-            background-color: #0c0d0f;
-            border-radius: 15px;
-            border: 1px solid rgba(0, 188, 255, 0.3);
-            display: none; /* İlk başta gizli, cevap gelince açılır */
-            text-align: left;
-            font-size: 1.2rem;
-            line-height: 1.6;
-        }
-
-        /* Backend'den gelen etiketlerin (expert-badge) CSS stilleri */
-        .expert-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-        .badge-sozel { background-color: #00bcff; color: #000; }
-        .badge-sayisal { background-color: #ff007c; color: #fff; }
-        .badge-cografya { background-color: #00ff66; color: #000; }
-        .formula-box {
-            background-color: #222;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            margin: 10px 0;
-        }
-    </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <div class="logo-group">
-            <svg class="logo-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <path d="M 40,130 A 65,65 0 0,1 160,130" stroke="#00E5FF" stroke-width="12" stroke-linecap="round" fill="none" />
-                <circle cx="100" cy="130" r="16" fill="#00E5FF" />
-            </svg>
-            <h1 class="logo-title">ARİES AI</h1>
-        </div>
-        <button class="new-chat-btn" onclick="window.location.reload()">Yeni Sohbet</button>
-    </div>
+    <input type="text" id="user-input" placeholder="Sorunuzu buraya yazın..." autofocus style="width: 75%; padding: 10px;">
+    <button onclick="sendMessage()">Gönder</button>
 
-    <div class="main-content">
-        <svg class="logo-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 40,130 A 65,65 0 0,1 160,130" stroke="#00E5FF" stroke-width="12" stroke-linecap="round" fill="none" />
-            <circle cx="100" cy="130" r="16" fill="#00E5FF" />
-        </svg>
-        
-        <h1 class="welcome-title">Ne sormak ister siniz</h1>
-
-        <div class="input-container">
-            <input type="text" id="chat-input" class="chat-input" placeholder="Ne sormak ister siniz..." autofocus>
-        </div>
-
-        <div id="response-box" class="response-box"></div>
-    </div>
+    <div id="response-box" style="margin-top: 20px; font-size: 1.2rem; font-family: sans-serif;"></div>
 
     <script>
-        const inputField = document.getElementById('chat-input');
-        const responseBox = document.getElementById('response-box');
-
-        // Kullanıcı kutunun içindeyken Enter tuşuna basarsa çalışır
-        inputField.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const message = inputField.value.trim();
-                if (message === '') return;
-
-                // Geçici olarak ekranda "Düşünüyor..." yazsın
-                responseBox.style.display = 'block';
-                responseBox.innerHTML = '<i>ARIES AI düşünüyor...</i>';
-
-                // Senin app.py'deki /ask rotasına akıllı JSON isteği atıyoruz
-                fetch('/ask', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: message })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // app.py'den gelen zeki cevabı ekrandaki kutuya yazdırıyoruz
-                    if (data.reply) {
-                        responseBox.innerHTML = data.reply;
-                    } else {
-                        responseBox.innerHTML = "Bir hata oluştu kanka.";
-                    }
-                    inputField.value = ''; // Giriş kutusunu temizle
-                })
-                .catch(error => {
-                    console.error('Hata:', error);
-                    responseBox.innerHTML = "Sunucu bağlantısı kurulamadı kanka.";
-                });
+        // Enter tuşuna basıldığında mesajı otomatik gönderir
+        document.getElementById("user-input").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
             }
         });
+
+        function sendMessage() {
+            const inputField = document.getElementById("user-input");
+            const responseBox = document.getElementById("response-box");
+            const message = inputField.value.trim();
+
+            if (message === "") return;
+
+            // app.py içerisindeki request.json.get("message") satırına JSON verisi atıyoruz
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // app.py'den dönen jsonify({"reply": ...}) verisini buraya basıyoruz
+                // innerHTML kullandık çünkü python kodundaki <span class="..."> gibi HTML etiketleri düzgün işlensin
+                responseBox.innerHTML = data.reply;
+                inputField.value = ""; // Mesaj gönderildikten sonra kutuyu temizle
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                responseBox.innerHTML = "Bir hata oluştu kanka, konsolu kontrol et.";
+            });
+        }
     </script>
 
 </body>
