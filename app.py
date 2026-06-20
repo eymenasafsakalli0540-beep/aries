@@ -50,7 +50,7 @@ science_database = {
     "akciyer": "<b>Anatomi - Akciğer:</b> Solunum sisteminin ana organıdır. Kana oksijen sağlar, karbondioksiti dışarı atar.",
     "hucre": "<b>Fen Bilgisi - Hücre:</b> Canlıların canlılık özelliği gösteren en küçük yapı taşıdır.",
     "fotosentez": "<b>Fen Bilgisi - Fotosentez:</b> Bitkilerin güneş ışığı yardımıyla besin ve oksijen üretmesi olayıdır.",
-    "mitokondri": "<b>Fen Bilgisi - Mitokondri:</b> Hücrenin API merkezidir. ATP (enerji) üretir."
+    "mitokondri": "<b>Fen Bilgisi - Mitokondri:</b> Hücrenin enerji merkezidir. ATP (enerji) üretir."
 }
 
 # ⚡ FİZİK VE GEOMETRİ VERİ TABANI
@@ -91,14 +91,13 @@ def fetch_country_from_api(country_name):
 def home():
     return "ARIES AI API Server Active."
 
-# 🔓 GOOGLE SITES İÇİN ÖZEL CORS VE GÜVENLİK AYARLI PANEL ROTASI
+# 🔓 GOOGLE SITES TARAFI İÇİN CORS CEVAP BAŞLIKLARI TAMAMEN KİLİTLENDİ
 @app.route('/api/get-logs', methods=['POST', 'OPTIONS'])
 def get_logs():
     response_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Max-Age": "3600"
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
     }
     
     if request.method == 'OPTIONS': 
@@ -109,17 +108,20 @@ def get_logs():
     action = data.get('action', 'get')
     
     if password != GERCEK_SIFRE: 
-        return jsonify({"success": False, "message": "Erişim Reddedildi: Şifre Hatalı."}), 200, response_headers
+        return jsonify({"success": False, "message": "Şifre Hatalı kanka!"}), 200, response_headers
 
     if action == 'clear':
-        if os.path.exists("sorular.txt"): os.remove("sorular.txt")
+        if os.path.exists("sorular.txt"): 
+            os.remove("sorular.txt")
         return jsonify({"success": True, "logs": []}), 200, response_headers
 
     if os.path.exists("sorular.txt"):
-        with open("sorular.txt", "r", encoding="utf-8") as file: logs = file.readlines()
+        with open("sorular.txt", "r", encoding="utf-8") as file: 
+            logs = file.readlines()
         clean_logs = [line.strip() for line in logs if line.strip()]
-        return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else ["Henüz soru sorulmadı kanka."]}), 200, response_headers
-    return jsonify({"success": True, "logs": ["Henüz soru sorulmadı kanka."]}), 200, response_headers
+        return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else []}), 200, response_headers
+        
+    return jsonify({"success": True, "logs": []}), 200, response_headers
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -130,7 +132,7 @@ def ask():
     
     def save_log(status_msg):
         with open("sorular.txt", "a", encoding="utf-8") as file:
-            file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
+            file.write(f"[{current_time}] Soru: {raw_message} ({status_msg})\n")
 
     user_message = re.sub(r'[.,\?!;\(\)"\'’\-]', '', user_message)
     norm_msg = user_message.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
@@ -183,7 +185,7 @@ def ask():
 
     if len(matched_countries) == 1:
         save_log("CEVAPLANDI")
-        return jsonify({"reply": f'<b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}<br><br>ℹ️ {matched_countries[0]["bilgi"]}'})
+        return jsonify({"reply": f'<b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}<br><br>ℹ_{matched_countries[0]["bilgi"]}'})
 
     if any(x in norm_msg for x in ["selam", "merhaba"]):
         save_log("CEVAPLANDI")
