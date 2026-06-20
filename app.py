@@ -44,7 +44,7 @@ religious_database = {
     "dört halife": "<b>Dört Halife Dönemi:</b> Sırasıyla yöneten adalet timsalleridir:<br>1. Hz. Ebubekir<br>2. Hz. Ömer<br>3. Hz. Osman<br>4. Hz. Ali",
     "fıkıh": "<b>Fıkıh:</b> İslam hukukudur. Günlük hayatın dini kurallarını ve amel detaylarını inceleyen ilim dalıdır.",
     "tefsir": "<b>Tefsir:</b> Kur'an-ı Kerim'in ayetlerini detaylıca açıklayan ve yorumlayan ilim dalıdır.",
-    "hadis": "<b>Hadis:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) söylediği mübarek sözler ve davranışların bütüdür.",
+    "hadis": "<b>Hadis:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) söylediği mübarek sözler and davranışların bütüdür.",
     "kelam": "<b>Kelam:</b> İslam inanç esaslarını akli ve nakli delillerle savunup açıklayan ilim dalıdır.",
     "akait": "<b>Akait:</b> İslam dininde inanılması zorunlu olan iman esaslarının kurallarıdır."
 }
@@ -81,7 +81,7 @@ def fetch_country_from_api(country_name):
 def home():
     return render_template('index.html')
 
-# 🔐 SADECE SENİN BİLGİSAYARINDAN ERİŞEBİLECEĞİN GİZLİ LOG API ROTASI
+# 🔐 GIZLI LOG API ROTASI
 @app.route('/api/get-logs', methods=['POST', 'OPTIONS'])
 def get_logs():
     response_headers = {
@@ -96,14 +96,12 @@ def get_logs():
     data = request.json or {}
     password = data.get('password', '')
     
-    # Yeni özel güçlü şifren burada kontrol ediliyor kanka
     if password != "F89B2A.ey": 
         return jsonify({"success": False, "message": "Hatalı şifre girdin kanka!"}), 403, response_headers
 
     try:
         with open("sorular.txt", "r", encoding="utf-8") as file:
             logs = file.readlines()
-        # En yeni gelen sorular üstte listelensin diye listeyi ters çeviriyoruz
         return jsonify({"success": True, "logs": list(reversed(logs))}), 200, response_headers
     except FileNotFoundError:
         return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
@@ -111,13 +109,15 @@ def get_logs():
 @app.route('/ask', methods=['POST'])
 def ask():
     user_message = request.json.get("message", "").lower().strip()
-    raw_message = request.json.get("message", "").strip() # Log için orijinal halini saklıyoruz
+    raw_message = request.json.get("message", "").strip() 
 
-    # 📁 SORU TAKİP VE LOG SİSTEMİ
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    user_ip = request.remote_addr  # Soruyu soran kişinin IP adresi
-    with open("sorular.txt", "a", encoding="utf-8") as file:
-        file.write(f"[{current_time}] IP: {user_ip} -> Soru: {raw_message}\n")
+    user_ip = request.remote_addr  
+    
+    # Yardımcı log fonksiyonu (Kod tekrarını engellemek için)
+    def save_log(status_msg):
+        with open("sorular.txt", "a", encoding="utf-8") as file:
+            file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
 
     # Metin Normalizasyonu
     norm_msg = user_message.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
@@ -131,6 +131,7 @@ def ask():
 
     # Geliştirici ve Kimlik Kontrolü
     if any(x in norm_msg for x in ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]):
+        save_log("CEVAPLANDI")
         if is_buddy_mode:
             return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>TÜW</b> geliştirdi kanka! Adım <b>ARIES AI</b>, yaratıcım ve tek liderim <b>TÜW</b>\'dür. 🚀'})
         return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Ben, <b>TÜW</b> tarafından geliştirilmiş resmi bir yapay zeka asistanıyım. Yapay zeka ismim <b>ARIES AI</b> olup, tüm haklarım geliştiricim <b>TÜW</b>\'e aittir.'})
@@ -143,8 +144,10 @@ def ask():
             result = eval(math_message)
             if isinstance(result, float):
                 result = round(result, 4)
+            save_log("CEVAPLANDI")
             return jsonify({"reply": f'<span class="expert-badge badge-sayisal">Matematiksel Analiz</span><br><div class="formula-box">{user_message} = {result}</div><b>Sonuç:</b> {result}'})
         except:
+            save_log("HATA")
             msg = 'Hesaplanamadı kanka, işlemi kontrol et.' if is_buddy_mode else 'Girilen matematiksel işlem hesaplanamadı. Lütfen kontrol ediniz.'
             return jsonify({"reply": f'<span class="expert-badge badge-sayisal">Hata</span><br>{msg}'})
 
@@ -152,12 +155,14 @@ def ask():
     for key, response in religious_database.items():
         norm_key = key.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
         if norm_key in norm_msg or key in user_message:
+            save_log("CEVAPLANDI")
             return jsonify({"reply": f'<span class="expert-badge badge-sozel" style="background-color:#9c27b0;">İslami Analiz & Tarih</span><br>{response}'})
 
     # Tarih Motoru
     for key, response in historical_events.items():
         norm_key = key.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
         if norm_key in norm_msg or key in user_message:
+            save_log("CEVAPLANDI")
             return jsonify({"reply": f'<span class="expert-badge badge-sozel">Tarih & Genel Kültür</span><br>{response}'})
 
     # Coğrafya Motoru
@@ -187,22 +192,28 @@ def ask():
                  f'<b>Varış:</b> {c2["name"]}<br>'
                  f'📐 <b>Mesafe:</b> ~{distance} Kilometre<br>'
                  f'🌐 <b>Bölgeler:</b> {c1["k"]} ➔ {c2["k"]}')
+        save_log("CEVAPLANDI")
         return jsonify({"reply": reply})
 
     elif len(matched_countries) == 1:
         c = matched_countries[0]
+        save_log("CEVAPLANDI")
         if "baskent" in norm_msg:
             return jsonify({"reply": f'<span class="expert-badge badge-cografya">Küresel Coğrafya</span><br><b>Ülke:</b> {c["name"]}<br><b>Resmi Başkenti:</b> {c["b"]}'})
         return jsonify({"reply": f'<span class="expert-badge badge-cografya">Coğrafi Analiz</span><br><b>Ülke:</b> {c["name"]}<br><b>Kıta:</b> {c["k"]}<br><b>Başkent:</b> {c["b"]}<br><br>ℹ️ {c["bilgi"]}'})
 
     if any(x in norm_msg for x in ["selam", "merhaba", "slm", "mrb"]):
+        save_log("CEVAPLANDI")
         if is_buddy_mode:
             return jsonify({"reply": "Selam kanka! **ARIES AI** emirlerini bekliyor, ne yapıyoruz bugün?"})
         return jsonify({"reply": "Merhaba. **ARIES AI** sistemi, hizmete hazırdır."})
 
     if is_buddy_mode:
+        save_log("CEVAPLANDI")
         return jsonify({"reply": "Efendim kanka? Mekaniğin sahibi **TÜW**'ün izniyle buradayım, ne istersen sorabilirsin!"})
 
+    # Hiçbir eşleşme olmazsa çalışacak yer (Cevaplanamadı)
+    save_log("CEVAPLANAMADI")
     return jsonify({"reply": "ARIES Yapay Zeka Motoru talebinizi analiz etti ancak tam bir esleşme bulamadı. Lütfen coğrafya, dini ilimler, genel kültür veya matematik alanında bir soru yöneltiniz."})
 
 if __name__ == '__main__':
