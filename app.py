@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# Sunucu taraflı düz metin şifre (ARIES'in eski dostu)
+# Sunucu taraflı şifre
 GERCEK_SIFRE = 'F89B2A.ey'
 
 # 🌍 MEGA COĞRAFYA VERİ TABANI
@@ -29,7 +29,7 @@ world_countries = {
 # 📜 TARİH VERİ TABANI
 historical_events = {
     "istanbulun fethi": "<b>1453 - İstanbul'un Fethi:</b> Fatih Sultan Mehmed liderliğindeki Osmanlı ordusu Bizans'ı yıktı. Orta Çağ kapandı, Yeni Çağ başladı.",
-    "cumhuriyetin ilani": "<b>29 Ekim 1923 - Cumhuriyetin İlanı:</b> Gazi Mustafa Kemal Atatürk önderliğinde Türkiye Cumhuriyet Cumhuriyeti resmen kuruldu. 🇹🇷",
+    "cumhuriyetin ilani": "<b>29 Ekim 1923 - Cumhuriyetin İlanı:</b> Gazi Mustafa Kemal Atatürk önderliğinde Türkiye Cumhuriyeti resmen kuruldu. 🇹🇷",
     "malazgirt": "<b>1071 - Malazgirt Meydan Muharebesi:</b> Sultan Alparslan komutasındaki Büyük Selçuklu ordusu, Anadolu'nun kapılarını Türklere açtı.",
     "buyuk taarruz": "<b>1922 - Büyük Taarruz:</b> Türk Kurtuluş Savaşı'nın son evresi. Anadolu düşman işgalinden tamamen temizlendi."
 }
@@ -56,8 +56,8 @@ science_database = {
 # ⚡ FİZİK VE GEOMETRİ VERİ TABANI
 physics_geometry_database = {
     "yercekimi": "<b>Fizik - Yerçekimi Kuvveti:</b> Kütlesi olan cisimlerin birbirini çekmesidir. Dünyadaki yerçekimi ivmesi yaklaşık $g = 9.81 m/s^2$ kabul edilir.",
-    "ohm kanunu": "<b>Fizik - Ohm Kanunu:</b> Elektrik devresinde gerilim (V), akım (I) ve direnç (R) arasındaki ilişkidir. Formülü: $V = I \\cdot R$.",
-    "ucgen": "<b>Geometri - Üçgen:</b> İç açılarının toplamı her zaman **180°**, dış açılarının toplamı ise **360°**'dir.",
+    "ohm kanunu": "<b>Fizik - Ohm Kanunu:</b> Elektrik devresinde gerilim (V), akım (I) ve direnç (R) arasındaki ilişkiyi belirtir: $V = I \\cdot R$.",
+    "ucgen": "<b>Geometri - Üçgen:</b> İç açılarının toplamı **180°**, dış açılarının toplamı ise **360°**'dir.",
     "kare": "<b>Geometri - Kare:</b> Tüm kenarları eşit, tüm iç açıları **90°** olan düzgün dörtgendir. Alanı: $A = a^2$.",
     "daire": "<b>Geometri - Daire:</b> Merkezden kenara olan mesafeye yarıçap (r) denir. Alanı: $A = \\pi \\cdot r^2$."
 }
@@ -106,30 +106,40 @@ def get_logs():
     action = data.get('action', 'get')
     
     if password != GERCEK_SIFRE: 
-        return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
+        return jsonify({"success": False, "message": "Şifre Hatalı!"}), 200, response_headers
 
     if action == 'clear':
-        if os.path.exists("sorular.txt"): 
-            os.remove("sorular.txt")
+        if os.path.exists("sorular.txt"): os.remove("sorular.txt")
         return jsonify({"success": True, "logs": []}), 200, response_headers
 
     if os.path.exists("sorular.txt"):
-        with open("sorular.txt", "r", encoding="utf-8") as file: 
-            logs = file.readlines()
+        with open("sorular.txt", "r", encoding="utf-8") as file: logs = file.readlines()
         clean_logs = [line.strip() for line in logs if line.strip()]
-        return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
-    return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
+        return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else []}), 200, response_headers
+    return jsonify({"success": True, "logs": []}), 200, response_headers
 
-@app.route('/ask', methods=['POST'])
+@app.route('/ask', methods=['POST', 'OPTIONS'])
 def ask():
-    user_message = request.json.get("message", "").lower().strip()
-    raw_message = request.json.get("message", "").strip() 
+    response_headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    }
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200, response_headers
+
+    data = request.json or {}
+    raw_message = data.get("message", "").strip()
+    
+    if not raw_message:
+        return jsonify({"reply": "Bana boş mesaj gönderdin kanka."}), 200, response_headers
+        
+    user_message = raw_message.lower()
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    user_ip = request.remote_addr  
     
     def save_log(status_msg):
         with open("sorular.txt", "a", encoding="utf-8") as file:
-            file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
+            file.write(f"[{current_time}] DURUM: {status_msg} -> Soru: {raw_message}\n")
 
     user_message = re.sub(r'[.,\?!;\(\)"\'’\-]', '', user_message)
     norm_msg = user_message.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
@@ -142,9 +152,10 @@ def ask():
     fixed_words = [typo_rules.get(w, w) for w in words]
     norm_msg = " ".join(fixed_words)
 
+    # Geliştirici ve Robot İsim Kontrolü (TÜYK ve ARIES UYUMU)
     if any(x in norm_msg for x in ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]):
         save_log("CEVAPLANDI")
-        return jsonify({"reply": 'Beni tam bir dahi olmam için <b>TÜW</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀'})
+        return jsonify({"reply": 'Beni tam bir dahi olmam için <b>Eymen</b> geliştirdi kanka! Yapay zekamın adı <b>TÜYK</b>, projemizin adı ise <b>ARIES AI</b>! 🚀'}), 200, response_headers
 
     math_message = user_message.replace(",", ".")
     math_chars = set("0123456789+-*/(). ")
@@ -152,22 +163,21 @@ def ask():
         try:
             result = eval(math_message)
             save_log("CEVAPLANDI")
-            return jsonify({"reply": f'{user_message} = {result}'})
+            return jsonify({"reply": f'{raw_message} = {result}'}), 200, response_headers
         except:
-            save_log("HATA")
-            return jsonify({"reply": "İşlem hesaplanamadı kanka, kontrol et."})
+            pass
 
     for key, response in science_database.items():
-        if key in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response})
+        if key in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response}), 200, response_headers
 
     for key, response in physics_geometry_database.items():
-        if key in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response})
+        if key in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response}), 200, response_headers
 
     for key, response in religious_database.items():
-        if key in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response})
+        if key in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response}), 200, response_headers
 
     for key, response in historical_events.items():
-        if key.replace("ı", "i").replace("ğ", "g") in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response})
+        if key.replace("ı", "i").replace("ğ", "g") in norm_msg: save_log("CEVAPLANDI"); return jsonify({"reply": response}), 200, response_headers
 
     matched_countries = []
     for country, data in world_countries.items():
@@ -182,19 +192,19 @@ def ask():
 
     if len(matched_countries) == 1:
         save_log("CEVAPLANDI")
-        return jsonify({"reply": f'<b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}<br><br>ℹ️ {matched_countries[0]["bilgi"]}'})
+        return jsonify({"reply": f'<b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}<br><br>ℹ️ {matched_countries[0]["bilgi"]}'}), 200, response_headers
 
-    if any(x in norm_msg for x in ["selam", "merhaba"]):
+    if any(x in norm_msg for x in ["selam", "merhaba", "naber"]):
         save_log("CEVAPLANDI")
-        return jsonify({"reply": "Selam kanka! ARIES AI hazır, ne soruyoruz?"})
+        return jsonify({"reply": "Selam kanka! TÜYK (ARIES AI) hazır, ne öğrenmek istersin?"}), 200, response_headers
 
     canli_sonuc = google_gibi_ara(raw_message)
     if canli_sonuc:
         save_log("CEVAPLANDI (CANLI)")
-        return jsonify({"reply": canli_sonuc})
+        return jsonify({"reply": canli_sonuc}), 200, response_headers
 
     save_log("CEVAPLANAMADI")
-    return jsonify({"reply": "ARIES bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka. Matematik, fen, fizik, geometri, anatomi, tarih veya coğrafya sormayı dene!"})
+    return jsonify({"reply": "TÜYK bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka. Matematik, fen, tarih veya coğrafya sormayı dene!"}), 200, response_headers
 
 if __name__ == '__main__':
     app.run(debug=True)
