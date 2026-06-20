@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import math
 import requests
+import os
 from datetime import datetime  # Soruların zamanını kaydetmek için ekledik
 
 app = Flask(__name__)
@@ -71,7 +72,7 @@ def fetch_country_from_api(country_name):
             latlng = data.get("latlng", [0, 0])
             return {
                 "name": name_tr, "b": capital, "k": region, "lat": latlng[0], "lon": latlng[1],
-                "bilgi": f"{flag} {name_tr}, {region} kıtasında yer alan, yaklaşık {population:,} nüfuslu bir dünya ülkesidir."
+                "bilgi": f"{flag} {name_tr}, {region} kıtasında yer alan, yaklaşık {population:,} nüfuslu bir world_countries ülkesidir."
             }
     except:
         pass
@@ -81,7 +82,7 @@ def fetch_country_from_api(country_name):
 def home():
     return render_template('index.html')
 
-# 🔐 GIZLI LOG API ROTASI
+# 🔐 AKILLI VE GÜVENLİ LOG API ROTASI (TEMİZLEME DESTEKLİ)
 @app.route('/api/get-logs', methods=['POST', 'OPTIONS'])
 def get_logs():
     response_headers = {
@@ -95,13 +96,29 @@ def get_logs():
 
     data = request.json or {}
     password = data.get('password', '')
+    action = data.get('action', 'get')  # 'clear' veya 'get' komutunu yakalar
     
     if password != "F89B2A.ey": 
         return jsonify({"success": False, "message": "Hatalı şifre girdin kanka!"}), 403, response_headers
 
+    # 🗑️ PANELDEKİ SİLME TUŞUNA BASILDIYSA DOSYAYI SIFIRLA
+    if action == 'clear':
+        try:
+            with open("sorular.txt", "w", encoding="utf-8") as file:
+                file.write("")  # İçeriği tamamen kazıdık kanka
+            return jsonify({"success": True, "logs": []}), 200, response_headers
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500, response_headers
+
+    # 🔄 NORMAL ŞARTLARDA VERİLERİ ÇEK VE GÖNDER
     try:
         with open("sorular.txt", "r", encoding="utf-8") as file:
             logs = file.readlines()
+        
+        # Eğer dosya içi boşsa düzgün mesaj dönelim
+        if not logs or len(logs) == 0:
+            return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
+            
         return jsonify({"success": True, "logs": list(reversed(logs))}), 200, response_headers
     except FileNotFoundError:
         return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
@@ -114,7 +131,7 @@ def ask():
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     user_ip = request.remote_addr  
     
-    # Yardımcı log fonksiyonu (Kod tekrarını engellemek için)
+    # Yardımcı log fonksiyonu
     def save_log(status_msg):
         with open("sorular.txt", "a", encoding="utf-8") as file:
             file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
