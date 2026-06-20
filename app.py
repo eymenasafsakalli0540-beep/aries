@@ -81,14 +81,39 @@ def fetch_country_from_api(country_name):
 def home():
     return render_template('index.html')
 
+# 🔐 SADECE SENİN BİLGİSAYARINDAN ERİŞEBİLECEĞİN GİZLİ LOG API ROTASI
+@app.route('/api/get-logs', methods=['POST', 'OPTIONS'])
+def get_logs():
+    response_headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    }
+    
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200, response_headers
+
+    data = request.json or {}
+    password = data.get('password', '')
+    
+    # Yeni özel güçlü şifren burada kontrol ediliyor kanka
+    if password != "F89B2A.ey": 
+        return jsonify({"success": False, "message": "Hatalı şifre girdin kanka!"}), 403, response_headers
+
+    try:
+        with open("sorular.txt", "r", encoding="utf-8") as file:
+            logs = file.readlines()
+        # En yeni gelen sorular üstte listelensin diye listeyi ters çeviriyoruz
+        return jsonify({"success": True, "logs": list(reversed(logs))}), 200, response_headers
+    except FileNotFoundError:
+        return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
+
 @app.route('/ask', methods=['POST'])
 def ask():
     user_message = request.json.get("message", "").lower().strip()
     raw_message = request.json.get("message", "").strip() # Log için orijinal halini saklıyoruz
 
     # 📁 SORU TAKİP VE LOG SİSTEMİ
-    # Gelen her soruyu tarih, saat ve IP adresi ile birlikte 'sorular.txt' dosyasına yazar.
-    # Bu dosya sadece senin bilgisayarında, proje klasörünün içinde oluşur.
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     user_ip = request.remote_addr  # Soruyu soran kişinin IP adresi
     with open("sorular.txt", "a", encoding="utf-8") as file:
