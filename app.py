@@ -4,10 +4,11 @@ import requests
 import os
 import re  
 from datetime import datetime  
+from bs4 import BeautifulSoup  # İnternetten temiz bilgi kazımak için ekledik
 
 app = Flask(__name__)
 
-# 🌍 MEGA COĞRAFYA VERİ TABANI (TÜM POPÜLER ÜLKELER EKLENDİ)
+# 🌍 MEGA COĞRAFYA VERİ TABANI
 world_countries = {
     "turkiye": {"b": "Ankara", "k": "Asya/Avrupa", "lat": 39.93, "lon": 32.85, "bilgi": "Asya ve Avrupa'yı birbirine bağlayan, üç tarafı denizlerle çevrili, şanlı bir tarihe sahip stratejik bir köprü ülkedir. En büyük şehri İstanbul'dur."},
     "hindistan": {"b": "Yeni Delhi", "k": "Asya", "lat": 28.61, "lon": 77.20, "bilgi": "Güney Asya'da yer alan, dünyanın en kalabalık nüfusuna sahip, Tac Mahal gibi devasa tarihi eserleri barındıran rengarenk bir kültür ülkesidir."},
@@ -56,7 +57,7 @@ religious_database = {
     "fikih": "<b>Fıkıh İlmi:</b> İslam'ın ibadet, evlilik, ticaret gibi günlük hayatla ilgili hukuksal ve ameli kurallarını, detaylarını derinlemesine inceleyen ve yorumlayan İslam hukuku bilim dalıdır.",
     "tefsir": "<b>Tefsir İlmi:</b> Kur'an-ı Kerim'in ayetlerini iniş sebeplerine, dil özelliklerine ve peygamberimizin açıklamalarına dayanarak en doğru ve detaylı şekilde açıklayan, yorumlayan kutsal bilim dalıdır.",
     "hadis": "<b>Hadis-i Şerif:</b> Sevgili Peygamberimiz Hz. Muhammed'in (s.a.v.) söylediği mübarek sözler, yaptığı davranışlar ve ashabının yaptığı işleri onaylamasının (takrir) yazılı ve sözlü bütün bütünüdür.",
-    "kelam": "<b>Kelam İlmi:</b> İslam dininin inanç esaslarını (imanın şartlarını) akli mantık yürütmelerle ve ayet-hadis delilleriyle savunan, felsefi eleştirilere karşı inancı koruyan bilim dalıdır.",
+    "kelam": "<b>Kelam İlmi:</b> İslam dininin inanç esaslarını (imanın şartlarını) akli mantık yürütmelerle ve ayet-hadis delilleriyle savunan, felsefi eleştirilere karşı inancı koruyen bilim dalıdır.",
     "akait": "<b>Akait:</b> İslam dininde gönülden inanılması, şüphe duyulmaması zorunlu olan temel inanç esaslarının (Allah'a, meleklere, kitaplara, peygamberlere, ahirete, kadere iman) oluşturduğu kurallar bütünüdür.",
     "siyer": "<b>Siyer Bilimi:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) kutlu doğumu, mucizeleri, çocukluğu, gençliği, evliliği ve peygamberlik dönemindeki tüm savaş ve mücadelelerini, yani tüm hayatını kronolojik inceleyen bilim dalıdır."
 }
@@ -69,20 +70,36 @@ science_database = {
     "mide": "<b>Anatomi - Mide:</b> Sindirim sisteminin kaslı ve j şeklinde genişlemiş organıdır. İçindeki güçlü mide asidi (Hidroklorik asit) ve enzimler sayesinde besinleri mekanik ve kimyasal olarak parçalayarak 'bulamaç' (kimus) haline getirir ve ince bağırsağa gönderir.",
     "beyin": "<b>Anatomi - Beyin:</b> Merkezi sinir sisteminin kontrol kulesidir. Kafatası içinde yer alır; düşünme, hafıza, öğrenme, duygular, beş duyu organının yönetimi ve vücuttaki tüm hormonal dengelerin, organların birbiriyle uyum içinde çalışmasını sağlayan ana bilgisayardır.",
     "hucre": "<b>Fen Bilgisi - Hücre:</b> Canlıların canlılık özelliği gösteren, büyüme, bölünme ve beslenme yeteneğine sahip en küçük yapı taşıdır. Dıştan içe doğru: Hücre zarı (seçici geçirgen koruyucu), Sitoplazma (organellerin bulunduğu sıvı kısım) ve Çekirdek (yönetim merkezi, DNA) olmak üzere 3 temel kısımdır.",
-    "fotosentez": "<b>Fen Bilgisi - Fotosentez:</b> Bitkilerin, alglerin ve bazı bakterilerin kloroplast organelinde bulunan klorofil pigmenti sayesinde; güneş ışığını kullanarak, topraktan aldıkları su ($H_2O$) ve havadan aldıkları karbondioksiti ($CO_2$) birleştirerek kendi besinlerini (glikoz) ve dışarıya hayat veren Oksijeni ($O_2$) üretmesi olayıdır.",
-    "mitokondri": "<b>Fen Bilgisi - Mitokondri Organeli:</b> Hücrenin yüksek verimli enerji santralidir. Hücre içerisine gelen besin maddelerini oksijen kullanarak parçalar (oksijenli solunum) ve hücrenin hayati faaliyetlerinde (büyüme, hareket, bölünme) kullanacağı ATP (Adenozin Trifosfat) yani enerji molekülünü sentezler."
+    "fotosentez": "<b>Fen Bilgisi - Fotosentez:</b> Bitkilerin, alglerin ve bazı bakterilerin kloroplast organelinde bulunan klorofil pigmenti sayesinde; güneş ışığını kullanarak, topraktan aldıkları su (H2O) ve havadan aldıkları karbondioksiti (CO2) birleştirerek kendi besinlerini (glikoz) ve dışarıya hayat veren Oksijeni (O2) üretmesi olayıdır.",
+    "mitokondri": "<b>Fen Bilgisi - Mitokondri Organeli:</b> Hücrenin yüksek verimli enerji santralidir. Hücre içerisine gelen besin maddelerini oksijen kullanarak parçalar (oksijenli solunum) ve hücrenin hayati faaliyetlerinde kullanacağı ATP yani enerji molekülünü sentezler."
 }
 
-# ⚡ UPUPUZUN FIZIK VE GEOMETRI VERI TABANI
+# ⚡ UPUPUZUN FİZİK VE GEOMETRİ VERİ TABANI (SAÇMA SEMBOLLER TEMİZLENDİ)
 physics_geometry_database = {
-    "yercekimi": "<b>Fizik - Yerçekimi Kuvveti:</b> Kütlesi olan tüm büyük gök cisimlerinin (Dünya, Ay, Güneş) üzerindeki nesnelere uyguladığı çekim kuvvetidir. Dünyadaki yerçekimi ivmesi yaklaşık $g = 9.81 m/s^2$ kabul edilir. Formülü $F = m \cdot g$'dir. Kafasına elma düşen Sir Isaac Newton tarafından sistemleştirilmiştir.",
-    "surtunme": "<b>Fizik - Sürtünme Kuvveti:</b> Birbirine temas eden iki yüzey arasında, cismin hareket yönüne her zaman zıt yönde oluşan, hareketi zorlaştıran veya engelleyen kuvvettir. Yüzeyin pürüzlülüğüne bağlıdır. Hareket enerjisini (kinetik) doğrudan ısı enerjisine dönüştürür. Formülü: $F_s = k \cdot N$ şeklindedir.",
-    "ohm kanunu": "<b>Fizik - Ohm Kanunu:</b> Bir elektrik devresindeki iletkenin iki ucu arasındaki gerilim (V - Volt), üzerinden geçen elektrik akımı (I - Amper) ve iletkenin gösterdiği direnç (R - Ohm) arasındaki altın ilişkiyi açıklar. Müthiş formülü şudur: $V = I \cdot R$ (yani Vır formülü).",
-    "ucgen": "<b>Geometri - Üçgen:</b> Aynı doğru üzerinde olmayan üç noktanın düz çizgilerle birleşmesinden oluşan en temel kapalı geometrik şekildir. Çeşit kenar, ikizkenar ve eşkenar çeşitleri vardır. Bir üçgenin iç açılarının toplamı her zaman **180°**, dış açılarının toplamı ise **360°**'dir. Alanı: $\\frac{\\text{Taban} \\cdot \\text{Yükseklik}}{2}$ formülüyle hesaplanır.",
-    "kare": "<b>Geometri - Kare:</b> Dört kenar uzunluğu da birbirine tamamen eşit olan ve tüm iç açıları tam **90°** (dik açı) olan düzgün bir dörtgendir. Köşegenleri birbirini dik keser ve ortalar. Bir kenarına 'a' dersek; Çevresi: $4a$, Alanı ise bir kenarının kendisiyle çarpımı olan $A = a^2$ formülüyle bulunur.",
-    "dikdortgen": "<b>Geometri - Dikdörtgen:</b> Karşılıklı kenarları birbirine eşit ve paralel olan, dört iç açısının her biri **90°** olan bir dörtgendir. Komşu kenarları birbirine diktir. Uzun kenarına 'a', kısa kenarına 'b' dersek; Çevresi: $2(a+b)$, Alanı ise uzun ve kısa kenarın çarpımı olan $A = a \cdot b$ formülüyle hesaplanır.",
-    "daire": "<b>Geometri - Daire ve Çember:</b> Düzlemde sabit bir noktaya (merkez) eşit uzaklıktaki noktalar kümesine çember, iç bölgesinin de dahil olduğu şekle daire denir. Merkezden kenara olan mesafeye yarıçap (r) denir. Çemberin Çevresi: $2 \\cdot \\pi \\cdot r$, Dairenin Alanı ise ünlü $\\text{Alan} = \\pi \\cdot r^2$ formülüyle tıkır tıkır hesaplanır."
+    "yercekimi": "<b>Fizik - Yerçekimi Kuvveti:</b> Kütlesi olan tüm büyük gök cisimlerinin üzerindeki nesnelere uyguladığı çekim kuvvetidir. Dünyadaki yerçekimi ivmesi yaklaşık g = 9.81 m/s2 kabul edilir. Formülü F = m * g şeklindedir. Kafasına elma düşen Isaac Newton tarafından sistemleştirilmiştir.",
+    "surtunme": "<b>Fizik - Sürtünme Kuvveti:</b> Birbirine temas eden iki yüzey arasında, cismin hareket yönüne her zaman zıt yönde oluşan, hareketi zorlaştıran veya engelleyen kuvvettir. Hareket enerjisini doğrudan ısı enerjisine dönüştürür. Formülü: Fs = k * N şeklindedir.",
+    "ohm kanunu": "<b>Fizik - Ohm Kanunu:</b> Bir elektrik devresindeki iletkenin iki ucu arasındaki gerilim (V - Volt), üzerinden geçen elektrik akımı (I - Amper) ve iletkenin gösterdiği direnç (R - Ohm) arasındaki ilişkiyi açıklar. Ünlü formülü şudur: V = I * R (yani Vır formülü).",
+    "ucgen": "<b>Geometri - Üçgen:</b> Aynı doğru üzerinde olmayan üç noktanın düz çizgilerle birleşmesinden oluşan kapalı geometrik şekildir. Bir üçgenin iç açılarının toplamı her zaman 180 derece, dış açılarının toplamı ise 360 derecedir. Alanı: (Taban * Yükseklik) / 2 formülüyle hesaplanır.",
+    "kare": "<b>Geometri - Kare:</b> Dört kenar uzunluğu da birbirine tamamen eşit olan ve tüm iç açıları tam 90 derece (dik açı) olan düzgün bir dörtgendir. Bir kenarına 'a' dersek; Çevresi: 4 * a, Alanı ise bir kenarının kendisiyle çarpımı olan Alan = a * a formülüyle bulunur.",
+    "dikdortgen": "<b>Geometri - Dikdörtgen:</b> Karşılıklı kenarları birbirine eşit ve paralel olan, dört iç açısının her biri 90 derece olan bir dörtgendir. Uzun kenarına 'a', kısa kenarına 'b' dersek; Çevresi: 2 * (a + b), Alanı ise uzun ve kısa kenarın çarpımı olan Alan = a * b formülüyle hesaplanır.",
+    "daire": "<b>Geometri - Daire ve Çember:</b> Çemberin iç bölgesinin de dahil olduğu şekle daire denir. Merkezden kenara olan mesafeye yarıçap (r) denir. Çemberin Çevresi: 2 * pi * r, Dairenin Alanı ise ünlü Alan = pi * r * r formülüyle hesaplanır."
 }
+
+# 🔍 ÜCRETSİZ VE API ANAHTARSIZ GOOGLE GİBİ ARAMA FONKSİYONU (DUCKDUCKGO MOTORU)
+def google_gibi_ara(sorgu):
+    try:
+        url = f"https://html.duckduckgo.com/html/?q={sorgu}"
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            result = soup.find('a', class_='result__snippet')
+            if result:
+                return result.text.strip()
+    except:
+        pass
+    return None
 
 def calculate_haversine(lat1, lon1, lat2, lon2):
     R = 6371
@@ -101,13 +118,7 @@ def fetch_country_from_api(country_name):
             name_tr = data.get("translations", {}).get("tur", {}).get("common", country_name).upper()
             capital = data.get("capital", ["Bilinmiyor"])[0]
             region = data.get("continents", ["Bilinmiyor"])[0]
-            population = data.get("population", 0)
-            flag = data.get("flag", "🌐")
-            latlng = data.get("latlng", [0, 0])
-            return {
-                "name": name_tr, "b": capital, "k": region, "lat": latlng[0], "lon": latlng[1],
-                "bilgi": f"{flag} {name_tr}, {region} kıtasında yer alan, yaklaşık {population:,} nüfuslu harika bir ülkedir."
-            }
+            return {"name": name_tr, "b": capital, "k": region, "bilgi": f"🌐 {name_tr}, {region} kıtasında yer alan bir ülkedir."}
     except:
         pass
     return None
@@ -153,11 +164,9 @@ def ask():
         with open("sorular.txt", "a", encoding="utf-8") as file:
             file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
 
-    # Noktalama temizliği
     user_message = re.sub(r'[.,\?!;\(\)"\'’\-]', '', user_message)
     norm_msg = user_message.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
 
-    # GELİŞTİRİLMİŞ YANLIŞ YAZIM TOLERANS MOTORU (nber, nbr, mrb vb.)
     typo_rules = {
         "nber": "naber", "nbr": "naber", "slm": "selam", "mrb": "merhaba", 
         "mrhb": "merhaba", "knk": "kanka", "kgo": "coğrafya", "mat": "matematik",
@@ -169,10 +178,9 @@ def ask():
 
     is_buddy_mode = "kanka" in norm_msg or "naber" in norm_msg
 
-    # Yapımcı Kontrolü
     if any(x in norm_msg for x in ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]):
         save_log("CEVAPLANDI")
-        return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>TÜW</b> geliştirdi kanka! Adım <b>ARIES AI</b>. Mekaniğin sahibi odur. 🚀'})
+        return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>TÜW</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀'})
 
     # Matematik Motoru
     math_message = user_message.replace(",", ".")
@@ -184,39 +192,34 @@ def ask():
             return jsonify({"reply": f'<span class="expert-badge badge-sayisal">Matematiksel Analiz</span><br><div class="formula-box">{user_message} = {result}</div>'})
         except:
             save_log("HATA")
-            return jsonify({"reply": "İşlem hesaplanamadı kanka, formülü kontrol et."})
+            return jsonify({"reply": "İşlem hesaplanamadı kanka, kontrol et."})
 
-    # Anatomi ve Fen Bilgisi Kontrolü
+    # Veri tabanı kontrolleri
     for key, response in science_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
             return jsonify({"reply": f'<span class="expert-badge badge-sayisal" style="background-color:#00e676; color:black;">Fen Bilimleri & Anatomi</span><br>{response}'})
 
-    # Fizik ve Geometri Kontrolü
     for key, response in physics_geometry_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
             return jsonify({"reply": f'<span class="expert-badge badge-sayisal" style="background-color:#ff9100; color:black;">Fizik & Geometri</span><br>{response}'})
 
-    # Dini Terimler Kontrolü
     for key, response in religious_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
             return jsonify({"reply": f'<span class="expert-badge badge-sozel" style="background-color:#9c27b0;">İslami Tarih & İlim</span><br>{response}'})
 
-    # Tarih Kontrolü
     for key, response in historical_events.items():
         if key.replace("ı", "i").replace("ğ", "g") in norm_msg:
             save_log("CEVAPLANDI")
             return jsonify({"reply": f'<span class="expert-badge badge-sozel">Tarih Bilgisi</span><br>{response}'})
 
-    # Coğrafya Kontrolü (Yerel Devasa Liste)
     matched_countries = []
     for country, data in world_countries.items():
         if country in norm_msg:
-            matched_countries.append({"name": country.upper(), "b": data["b"], "k": data["k"], "lat": data["lat"], "lon": data["lon"], "bilgi": data["bilgi"]})
+            matched_countries.append({"name": country.upper(), "b": data["b"], "k": data["k"], "bilgi": data["bilgi"]})
 
-    # Eğer yerel listede yoksa canlı API'ye başvur (Dünyadaki tüm ülkeler için koruma kalkanı)
     if len(matched_countries) == 0:
         for word in words:
             if len(word) > 3:
@@ -225,20 +228,22 @@ def ask():
                     matched_countries.append(api_data)
                     break
 
-    if len(matched_countries) >= 2:
-        distance = calculate_haversine(matched_countries[0]["lat"], matched_countries[0]["lon"], matched_countries[1]["lat"], matched_countries[1]["lon"])
+    if len(matched_countries) == 1:
         save_log("CEVAPLANDI")
-        return jsonify({"reply": f'<span class="expert-badge badge-cografya">Rota Analizi</span><br>📐 <b>Mesafe:</b> {matched_countries[0]["name"]} ile {matched_countries[1]["name"]} arası yaklaşık ~{distance} Kilometre kanka!'})
-    elif len(matched_countries) == 1:
-        save_log("CEVAPLANDI")
-        return jsonify({"reply": f'<span class="expert-badge badge-cografya">Coğrafya Analizi</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Kıta:</b> {matched_countries[0]["k"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}<br><br>ℹ️ {matched_countries[0]["bilgi"]}'})
+        return jsonify({"reply": f'<span class="expert-badge badge-cografya">Coğrafya Analizi</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}<br><br>ℹ️ {matched_countries[0]["bilgi"]}'})
 
     if any(x in norm_msg for x in ["selam", "merhaba"]):
         save_log("CEVAPLANDI")
-        return jsonify({"reply": "Selam kanka! ARIES AI emrinde. Ne soruyoruz, fen mi tarih mi?"})
+        return jsonify({"reply": "Selam kanka! ARIES AI emrinde. Ne soruyoruz?"})
+
+    # 🔥 HİÇBİR YERDE BULAMAZSA GOOGLE GİBİ CANLI ARA
+    canli_sonuc = google_gibi_ara(raw_message)
+    if canli_sonuc:
+        save_log("CEVAPLANDI (CANLI)")
+        return jsonify({"reply": f'<span class="expert-badge badge-sozel" style="background-color:#00bcd4;">Canlı İnternet Sonucu</span><br>{canli_sonuc}'})
 
     save_log("CEVAPLANAMADI")
-    return jsonify({"reply": "ARIES bu soruyu analiz etti ama veri tabanında tam bir eşleşme bulamadı kanka. Matematik, fen, fizik, geometri, anatomi, tarih, dini ilimler veya coğrafya sormayı dene!"})
+    return jsonify({"reply": "ARIES internette de tam bir sonuç bulamadı kanka. Soruyu kontrol edip tekrar sormayı dene!"})
 
 if __name__ == '__main__':
     app.run(debug=True)
