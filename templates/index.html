@@ -2,69 +2,25 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARIES AI</title>
     <style>
-        body { 
-            margin: 0; 
-            background: #000; 
-            color: #fff; 
-            font-family: sans-serif; 
-            height: 100vh; 
-            display: flex; 
-        }
-        /* Sol panel */
-        #sidebar { 
-            width: 200px; 
-            border-right: 1px solid #1a1a1a; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-        }
-        .logo { color: #00e5ff; font-weight: bold; font-size: 20px; margin-bottom: 30px; }
-        .yeni-analiz { 
-            background: #1a1a1a; 
-            color: #fff; 
-            border: 1px solid #333; 
-            padding: 10px; 
-            border-radius: 5px; 
-            text-align: center; 
-            cursor: pointer; 
-        }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        #sidebar { width: 250px; border-right: 1px solid #1a1a1a; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .logo { color: #00e5ff; font-weight: bold; font-size: 24px; margin-bottom: 30px; }
+        .yeni-analiz { background: #111; color: #fff; border: 1px solid #333; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .yeni-analiz:hover { background: #222; }
         .dev { font-size: 12px; color: #666; }
         
-        /* Ana alan */
-        #main { flex-grow: 1; padding: 40px; position: relative; }
-        .tatil-yazi { position: absolute; top: 20px; right: 40px; text-align: right; line-height: 1.2; }
+        #main { flex-grow: 1; padding: 40px; position: relative; display: flex; flex-direction: column; }
+        .tatil-yazi { position: absolute; top: 40px; right: 40px; text-align: right; color: #fff; font-weight: bold; }
         
-        /* Mesaj kutusu */
-        .mesaj-balonu { 
-            border: 1px solid #00e5ff; 
-            border-radius: 20px; 
-            padding: 15px 25px; 
-            width: fit-content; 
-            margin-top: 50px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .mesaj-alani { flex-grow: 1; margin-top: 50px; overflow-y: auto; }
+        .mesaj-balonu { border: 1px solid #00e5ff; border-radius: 15px; padding: 15px; width: fit-content; max-width: 80%; margin-bottom: 20px; }
         
-        /* Giriş alanı */
-        .input-wrapper { 
-            position: absolute; 
-            bottom: 40px; 
-            left: 40px; 
-            right: 40px; 
-        }
-        input { 
-            width: 100%; 
-            background: #111; 
-            border: 1px solid #333; 
-            padding: 15px; 
-            color: #888; 
-            border-radius: 50px; 
-            outline: none; 
-            box-sizing: border-box;
-        }
+        .input-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; }
+        input { width: 100%; background: #111; border: 1px solid #333; padding: 15px 50px 15px 20px; color: #fff; border-radius: 12px; outline: none; box-sizing: border-box; }
+        .send-btn { position: absolute; right: 15px; top: 12px; cursor: pointer; color: #00e5ff; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -72,7 +28,7 @@
     <div id="sidebar">
         <div>
             <div class="logo">ARIES AI</div>
-            <div class="yeni-analiz">Yeni Analiz</div>
+            <div class="yeni-analiz" onclick="location.reload()">Yeni Analiz</div>
         </div>
         <div class="dev">DEVELOPER: <span style="color:#00e5ff">TÜW</span></div>
     </div>
@@ -80,15 +36,34 @@
     <div id="main">
         <div class="tatil-yazi">Tatil Bitene<br>Kadar Yokuz</div>
         
-        <div class="mesaj-balonu">
-            <span style="color:#00e5ff">•</span> 
-            ARIES AI: Merhaba TÜW. Web sitemiz yayına hazır. Tüm motorlar aktif edildi. Seni dinliyorum kanka.
+        <div class="mesaj-alani" id="chat">
+            <div class="mesaj-balonu">ARIES AI: Merhaba TÜW. Web sitemiz yayına hazır. Tüm motorlar aktif edildi. Seni dinliyorum kanka.</div>
         </div>
 
-        <div class="input-wrapper">
-            <input type="text" placeholder="Bir soru sorun...">
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="Bir soru sorun..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <span class="send-btn" onclick="sendMessage()">➔</span>
         </div>
     </div>
 
+    <script>
+        async function sendMessage() {
+            let input = document.getElementById("userInput");
+            let chat = document.getElementById("chat");
+            if (!input.value) return;
+
+            chat.innerHTML += `<div class="mesaj-balonu" style="margin-left:auto; border-color:#555;">${input.value}</div>`;
+            
+            let res = await fetch('/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: input.value})
+            });
+            let data = await res.json();
+            chat.innerHTML += `<div class="mesaj-balonu">${data.reply}</div>`;
+            input.value = "";
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
 </body>
 </html>
