@@ -3,59 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARIES AI | Arayüz</title>
+    <title>ARIES AI | Final</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; }
-        
-        /* Sol Menü */
-        #sidebar { 
-            width: 250px; border-right: 1px solid #111; padding: 20px; 
-            display: flex; flex-direction: column; justify-content: space-between; 
-        }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; }
+        #sidebar { width: 250px; border-right: 1px solid #111; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
         .logo { color: #00e5ff; font-weight: bold; font-size: 22px; margin-bottom: 30px; }
-        .yeni-analiz { 
-            background: #111; color: #fff; border: 1px solid #222; 
-            padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;
-        }
-        .yeni-analiz:hover { background: #222; }
-        
-        /* Ana Ekran */
+        .yeni-analiz { background: #111; border: 1px solid #222; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; }
         #main { flex-grow: 1; position: relative; padding: 40px; }
-        
-        /* Tatil Yazısı */
-        .tatil-yazi { 
-            position: absolute; top: 30px; right: 40px; 
-            text-align: right; line-height: 1.2; color: #fff; font-size: 18px; font-weight: 500;
-        }
-        
-        /* Mesaj Alanı */
-        .mesaj-balonu { 
-            border: 1px solid #00e5ff; border-radius: 20px; 
-            padding: 15px 25px; width: fit-content; max-width: 80%;
-        }
-
-        /* Giriş Alanı ve Mavi Ok */
-        .input-container { 
-            position: absolute; bottom: 40px; left: 40px; right: 40px; 
-            display: flex; align-items: center; 
-        }
-        input { 
-            width: 100%; background: #111; border: 1px solid #222; 
-            padding: 18px 60px 18px 20px; color: #fff; border-radius: 50px; 
-            outline: none; box-sizing: border-box; font-size: 16px;
-        }
-        .mavi-ok { 
-            position: absolute; right: 20px; color: #00e5ff; 
-            font-size: 24px; cursor: pointer; font-weight: bold;
-        }
-
-        /* Mobil Optimizasyon */
-        @media (max-width: 768px) {
-            #sidebar { display: none; }
-            #main { padding: 20px; }
-            .tatil-yazi { font-size: 14px; top: 20px; right: 20px; }
-            .input-container { left: 20px; right: 20px; }
-        }
+        .tatil-yazi { position: absolute; top: 30px; right: 40px; text-align: right; line-height: 1.2; font-size: 18px; font-weight: 500; }
+        .mesaj-balonu { border: 1px solid #00e5ff; border-radius: 20px; padding: 15px 25px; width: fit-content; margin-top: 50px; }
+        .input-container { position: absolute; bottom: 40px; left: 40px; right: 40px; }
+        input { width: 100%; background: #111; border: 1px solid #222; padding: 18px 20px; color: #fff; border-radius: 50px; outline: none; box-sizing: border-box; font-size: 16px; }
+        @media (max-width: 768px) { #sidebar { display: none; } #main { padding: 20px; } }
     </style>
 </head>
 <body>
@@ -71,15 +30,29 @@
     <div id="main">
         <div class="tatil-yazi">Tatil Boyu<br>Yokuz</div>
         
-        <div class="mesaj-balonu">
-            <span style="color:#00e5ff">•</span> ARIES AI: Merhaba TÜW. Tüm motorlar aktif. Seni dinliyorum kanka.
+        <div id="chat-container">
+            <div class="mesaj-balonu">
+                <span style="color:#00e5ff">•</span> ARIES AI: Merhaba TÜW. Yaz, Enter'a bas, seni dinliyorum kanka.
+            </div>
         </div>
 
         <div class="input-container">
-            <input type="text" placeholder="Bir soru sorun...">
-            <span class="mavi-ok">➜</span>
+            <input type="text" id="userInput" placeholder="Bir soru sorun ve Enter'a basın...">
         </div>
     </div>
 
+    <script>
+        document.getElementById("userInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                let mesaj = this.value;
+                if(mesaj.trim() !== "") {
+                    console.log("Gönderilen: " + mesaj);
+                    // BURAYA ARIES'İN CEVAP VERME FONKSİYONU GELECEK
+                    this.value = ""; // Kutuyu temizle
+                    alert("ARIES işliyor: " + mesaj);
+                }
+            }
+        });
+    </script>
 </body>
 </html>
