@@ -2,60 +2,46 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARIES AI</title>
     <style>
         body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; }
         
-        /* Sol Menü */
-        #sidebar { 
-            width: 250px; border-right: 1px solid #111; padding: 20px; 
-            display: flex; flex-direction: column; justify-content: space-between; 
-        }
-        .logo { color: #00e5ff; font-weight: bold; font-size: 24px; margin-bottom: 30px; }
-        .yeni-analiz { 
-            background: #111; color: #fff; border: 1px solid #222; 
-            padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; 
-        }
-        .dev { font-size: 12px; color: #555; }
-
-        /* Ana Ekran */
+        /* SOL MENÜ (Telefonda gizlenebilir veya küçülebilir) */
+        #sidebar { width: 250px; border-right: 1px solid #111; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        /* ANA EKRAN */
         #main { flex-grow: 1; position: relative; padding: 40px; }
         
-        /* Tatil Yazısı - Buraya koyduk */
-        .tatil-yazi { 
-            position: absolute; top: 30px; right: 40px; 
-            text-align: right; line-height: 1.2; color: #fff; font-size: 18px; font-weight: 500;
+        /* MOBİL İÇİN ÖZEL AYARLAR */
+        @media (max-width: 600px) {
+            #sidebar { display: none; } /* Telefonda menüyü gizledik */
+            #main { padding: 20px; }
+            .tatil-yazi { font-size: 14px !important; top: 10px !important; right: 20px !important; }
+            .input-wrapper { left: 20px !important; right: 20px !important; }
         }
 
-        /* Mesaj Balonu */
-        .mesaj-balonu { 
-            border: 1px solid #00e5ff; border-radius: 20px; 
-            padding: 15px 25px; width: fit-content; margin-top: 50px;
-        }
-
-        /* Giriş Kutusu */
+        .tatil-yazi { position: absolute; top: 30px; right: 40px; text-align: right; line-height: 1.2; font-size: 18px; font-weight: 500; }
+        .mesaj-balonu { border: 1px solid #00e5ff; border-radius: 20px; padding: 15px 25px; width: fit-content; margin-top: 50px; }
         .input-wrapper { position: absolute; bottom: 40px; left: 40px; right: 40px; }
-        input { 
-            width: 100%; background: #111; border: 1px solid #222; 
-            padding: 18px; color: #888; border-radius: 50px; outline: none; box-sizing: border-box;
-        }
+        input { width: 100%; background: #111; border: 1px solid #222; padding: 18px; color: #888; border-radius: 50px; outline: none; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
     <div id="sidebar">
         <div>
-            <div class="logo">ARIES AI</div>
-            <div class="yeni-analiz">Yeni Analiz</div>
+            <div style="color: #00e5ff; font-weight: bold; font-size: 24px; margin-bottom: 30px;">ARIES AI</div>
+            <div style="background: #111; padding: 12px; border-radius: 8px; text-align: center;">Yeni Analiz</div>
         </div>
-        <div class="dev">DEVELOPER: <span style="color:#00e5ff">TÜW</span></div>
+        <div style="font-size: 12px; color: #555;">DEVELOPER: TÜW</div>
     </div>
 
     <div id="main">
         <div class="tatil-yazi">Tatil Boyu<br>Yokuz</div>
         
         <div class="mesaj-balonu">
-            <span style="color:#00e5ff">•</span> ARIES AI: Merhaba TÜW. Web sitemiz yayına hazır. Tüm motorlar aktif edildi. Seni dinliyorum kanka.
+            <span style="color:#00e5ff">•</span> ARIES AI: Merhaba TÜW. Seni dinliyorum kanka.
         </div>
 
         <div class="input-wrapper">
