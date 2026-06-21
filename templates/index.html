@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARIES AI | Final</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; }
-        #sidebar { width: 250px; border-right: 1px solid #111; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-        .logo { color: #00e5ff; font-weight: bold; font-size: 22px; margin-bottom: 30px; }
-        .yeni-analiz { background: #111; border: 1px solid #222; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; }
-        #main { flex-grow: 1; position: relative; padding: 40px; }
-        .tatil-yazi { position: absolute; top: 30px; right: 40px; text-align: right; line-height: 1.2; font-size: 18px; font-weight: 500; }
-        .mesaj-balonu { border: 1px solid #00e5ff; border-radius: 20px; padding: 15px 25px; width: fit-content; margin-top: 50px; }
-        .input-container { position: absolute; bottom: 40px; left: 40px; right: 40px; }
-        input { width: 100%; background: #111; border: 1px solid #222; padding: 18px 20px; color: #fff; border-radius: 50px; outline: none; box-sizing: border-box; font-size: 16px; }
-        @media (max-width: 768px) { #sidebar { display: none; } #main { padding: 20px; } }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        #sidebar { width: 200px; border-right: 1px solid #1a1a1a; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .logo { color: #00e5ff; font-weight: bold; font-size: 20px; margin-bottom: 30px; }
+        .yeni-analiz { background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 5px; text-align: center; cursor: pointer; }
+        .dev { font-size: 12px; color: #666; }
+        #main { flex-grow: 1; padding: 40px; position: relative; display: flex; flex-direction: column; }
+        #chat-area { flex-grow: 1; overflow-y: auto; padding-bottom: 20px; }
+        .tatil-yazi { position: absolute; top: 20px; right: 40px; text-align: right; line-height: 1.2; }
+        .mesaj-balonu { border: 1px solid #00e5ff; border-radius: 20px; padding: 15px 25px; width: fit-content; margin-top: 50px; display: flex; align-items: center; gap: 10px; }
+        .user-balon { background: #111; border: 1px solid #333; padding: 15px 25px; border-radius: 20px; width: fit-content; margin-top: 20px; margin-left: auto; }
+        .input-wrapper { position: absolute; bottom: 40px; left: 40px; right: 40px; }
+        input { width: 100%; background: #111; border: 1px solid #333; padding: 15px; color: #fff; border-radius: 50px; outline: none; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -22,35 +23,45 @@
     <div id="sidebar">
         <div>
             <div class="logo">ARIES AI</div>
-            <div class="yeni-analiz">Yeni Analiz</div>
+            <div class="yeni-analiz" onclick="location.reload()">Yeni Analiz</div>
         </div>
-        <div style="font-size: 12px; color: #555;">DEVELOPER: TÜW</div>
+        <div class="dev">DEVELOPER: <span style="color:#00e5ff">TÜW</span></div>
     </div>
 
     <div id="main">
-        <div class="tatil-yazi">Tatil Boyu<br>Yokuz</div>
+        <div class="tatil-yazi">Tatil Bitene<br>Kadar Yokuz</div>
         
-        <div id="chat-container">
+        <div id="chat-area">
             <div class="mesaj-balonu">
-                <span style="color:#00e5ff">•</span> ARIES AI: Merhaba TÜW. Yaz, Enter'a bas, seni dinliyorum kanka.
+                <span style="color:#00e5ff">•</span> ARIES AI: Merhaba TÜW. Seni dinliyorum kanka.
             </div>
         </div>
 
-        <div class="input-container">
-            <input type="text" id="userInput" placeholder="Bir soru sorun ve Enter'a basın...">
+        <div class="input-wrapper">
+            <input type="text" id="girdi" placeholder="Bir soru yaz ve Enter'a bas...">
         </div>
     </div>
 
     <script>
-        document.getElementById("userInput").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                let mesaj = this.value;
-                if(mesaj.trim() !== "") {
-                    console.log("Gönderilen: " + mesaj);
-                    // BURAYA ARIES'İN CEVAP VERME FONKSİYONU GELECEK
-                    this.value = ""; // Kutuyu temizle
-                    alert("ARIES işliyor: " + mesaj);
-                }
+        const girdi = document.getElementById('girdi');
+        const chatArea = document.getElementById('chat-area');
+
+        girdi.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim() !== "") {
+                // Kullanıcı mesajı
+                const u = document.createElement('div');
+                u.className = 'user-balon';
+                u.textContent = this.value;
+                chatArea.appendChild(u);
+
+                // Aries cevabı (örnek)
+                const a = document.createElement('div');
+                a.className = 'mesaj-balonu';
+                a.innerHTML = '<span style="color:#00e5ff">•</span> Aries işliyor...';
+                chatArea.appendChild(a);
+
+                this.value = '';
+                chatArea.scrollTop = chatArea.scrollHeight;
             }
         });
     </script>
