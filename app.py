@@ -204,7 +204,7 @@ def get_logs():
 
     
 
-    if password != "F89B2A.ey": 
+    if password != "4235": 
 
         return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
 
@@ -398,7 +398,7 @@ def ask():
 
         save_log("CEVAPLANDI")
 
-        return jsonify({"reply": "Selam kanka! ARIES AI hazır, ne soruyoruz?"})
+        return jsonify({"reply": "Selam! ARIES AI hazır, ne soruyoruz?"})
 
 
 
