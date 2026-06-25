@@ -2,25 +2,65 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ARIES AI</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; display: flex; overflow: hidden; }
-        #sidebar { width: 250px; border-right: 1px solid #1a1a1a; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        /* Tam ekran güvenli yapı */
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            background: #000; 
+            color: #fff; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            height: 100vh; 
+            display: flex; 
+            overflow: hidden; 
+        }
+
+        /* Sidebar Sabit Genişlik */
+        #sidebar { 
+            width: 250px; 
+            border-right: 1px solid #1a1a1a; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            background: #000;
+        }
+
         .logo { color: #00e5ff; font-weight: bold; font-size: 24px; margin-bottom: 30px; }
         .yeni-analiz { background: #111; color: #fff; border: 1px solid #333; padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; }
         .yeni-analiz:hover { background: #222; }
         .dev { font-size: 12px; color: #666; }
         
-        #main { flex-grow: 1; padding: 40px; position: relative; display: flex; flex-direction: column; }
+        /* Main Alanı: Ekranı Tam Doldurur */
+        #main { 
+            flex-grow: 1; 
+            padding: 40px; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh;
+        }
+
         .tatil-yazi { position: absolute; top: 40px; right: 40px; text-align: right; color: #fff; font-weight: bold; }
         
-        .mesaj-alani { flex-grow: 1; margin-top: 50px; overflow-y: auto; }
-        .mesaj-balonu { border: 1px solid #00e5ff; border-radius: 15px; padding: 15px; width: fit-content; max-width: 80%; margin-bottom: 20px; }
+        /* Mesaj Alanı ve Balonları */
+        .mesaj-alani { flex-grow: 1; margin-top: 50px; overflow-y: auto; display: flex; flex-direction: column; }
+        .mesaj-balonu { border: 1px solid #00e5ff; border-radius: 15px; padding: 15px; width: fit-content; max-width: 80%; margin-bottom: 20px; word-wrap: break-word; }
         
-        .input-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; }
-        input { width: 100%; background: #111; border: 1px solid #333; padding: 15px 50px 15px 20px; color: #fff; border-radius: 12px; outline: none; box-sizing: border-box; }
+        /* Giriş Kutusu ve Güvenlik */
+        .input-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; margin-bottom: 20px; }
+        input { width: 100%; background: #111; border: 1px solid #333; padding: 15px 50px 15px 20px; color: #fff; border-radius: 12px; outline: none; }
         .send-btn { position: absolute; right: 15px; top: 12px; cursor: pointer; color: #00e5ff; font-weight: bold; }
+
+        /* MOBİL VE TABLET İÇİN GÜVENİLİR EK KATMAN */
+        @media (max-width: 768px) {
+            #sidebar { display: none; } /* Küçük ekranda sidebar'ı kaldırarak alanı temizliyoruz */
+            #main { padding: 15px; }
+            .tatil-yazi { top: 15px; right: 15px; font-size: 11px; }
+            .mesaj-balonu { max-width: 90%; }
+        }
     </style>
 </head>
 <body>
@@ -50,19 +90,27 @@
         async function sendMessage() {
             let input = document.getElementById("userInput");
             let chat = document.getElementById("chat");
-            if (!input.value) return;
+            if (!input.value.trim()) return;
 
+            // Kullanıcı mesajı (kendi balonun)
             chat.innerHTML += `<div class="mesaj-balonu" style="margin-left:auto; border-color:#555;">${input.value}</div>`;
             
-            let res = await fetch('/ask', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({message: input.value})
-            });
-            let data = await res.json();
-            chat.innerHTML += `<div class="mesaj-balonu">${data.reply}</div>`;
-            input.value = "";
-            chat.scrollTop = chat.scrollHeight;
+            let messageToSend = input.value;
+            input.value = ""; 
+            chat.scrollTop = chat.scrollHeight; // Mesaj atılınca aşağı kaydır
+            
+            try {
+                let res = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: messageToSend})
+                });
+                let data = await res.json();
+                chat.innerHTML += `<div class="mesaj-balonu">${data.reply}</div>`;
+                chat.scrollTop = chat.scrollHeight; // Cevap gelince aşağı kaydır
+            } catch (e) {
+                chat.innerHTML += `<div class="mesaj-balonu" style="border-color:red;">Bağlantı hatası.</div>`;
+            }
         }
     </script>
 </body>
