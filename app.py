@@ -253,8 +253,8 @@ def get_logs():
         with open("sorular.txt", "r", encoding="utf-8") as file:
             logs = file.readlines()
         clean_logs = [line.strip() for line in logs if line.strip()]
-        return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
-    return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı kanka."]}), 200, response_headers
+        return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else ["Henüz hiç soru sorulmadı."]}), 200, response_headers
+    return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı."]}), 200, response_headers
 
 
 @app.route('/ask', methods=['POST'])
@@ -284,19 +284,23 @@ def ask():
     norm_msg = " ".join(fixed_words)
     norm_msg_nospace = norm_msg.replace(" ", "")  # bitişik yazımları yakalamak için (örn. "kimyapti")
 
-    is_buddy_mode = "kanka" in norm_msg or "naber" in norm_msg
+    # Kanka modu SADECE kullanıcı gerçekten "kanka" derse aktif olur.
+    # ("naber" artık kanka modunu tetiklemiyor; varsayılan ton ciddi/nazik kalır.)
+    is_buddy_mode = "kanka" in norm_msg
 
     # 🏗️ Yapımcı Kontrolü (bitişik yazımı da destekler: "seni kimyaptı")
     if any(p in norm_msg for p in CREATOR_PHRASES) or any(p.replace(" ", "") in norm_msg_nospace for p in CREATOR_PHRASES):
         save_log("CEVAPLANDI")
-        return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>TÜW</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀'})
+        if is_buddy_mode:
+            return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>TÜW</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀'})
+        return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni <b>TÜW</b> geliştirdi. Adım <b>ARIES AI</b>.'})
 
     # 👋 Selamlaşma Kontrolü (fuzzy: "naber", "marhaba dostum" gibi yazım hatalarını da yakalar)
     if any(fuzzy_word_in(w, GREETING_WORDS) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
             return jsonify({"reply": "Naber kanka! ARIES AI hazır, ne soruyoruz? 😎"})
-        return jsonify({"reply": "Selam! ARIES AI hazır, ne soruyoruz?"})
+        return jsonify({"reply": "Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?"})
 
     # 🔢 Matematik Motoru (güvenli hesaplayıcı ile)
     math_message = user_message.replace(",", ".")
@@ -308,7 +312,9 @@ def ask():
             return jsonify({"reply": f'<span class="expert-badge badge-sayisal">Matematiksel Analiz</span><br><div class="formula-box">{user_message} = {result}</div>'})
         except Exception:
             save_log("HATA")
-            return jsonify({"reply": "İşlem hesaplanamadı kanka, sayılar çok büyük olabilir ya da ifade geçersiz. Kontrol et."})
+            if is_buddy_mode:
+                return jsonify({"reply": "İşlem hesaplanamadı kanka, sayılar çok büyük olabilir ya da ifade geçersiz. Kontrol et."})
+            return jsonify({"reply": "İşlem hesaplanamadı. Sayılar çok büyük olabilir ya da ifade geçersiz görünüyor, lütfen kontrol edin."})
 
     # 🧬 Anatomi ve Fen Bilgisi Kontrolü
     for key, response in science_database.items():
@@ -349,7 +355,9 @@ def ask():
         return jsonify({"reply": f'<span class="expert-badge badge-cografya">Coğrafya</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}'})
 
     save_log("CEVAPLANAMADI")
-    return jsonify({"reply": "ARIES bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka. Matematik, fen, fizik, geometri, anatomi, tarih veya coğrafya sormayı dene!"})
+    if is_buddy_mode:
+        return jsonify({"reply": "ARIES bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka. Matematik, fen, fizik, geometri, anatomi, tarih veya coğrafya sormayı dene!"})
+    return jsonify({"reply": "ARIES bu soruyu analiz etti ancak tam bir eşleşme bulamadı. Matematik, fen bilimleri, fizik, geometri, anatomi, tarih veya coğrafya ile ilgili bir soru sormayı deneyebilirsiniz."})
 
 
 if __name__ == '__main__':
