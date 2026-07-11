@@ -135,6 +135,13 @@ physics_geometry_database = {
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
 GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi"]
 
+# 🙏 TEŞEKKÜR / NEZAKET KELİMELERİ (fuzzy eşleşme için)
+THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sagolun", "minnettarim", "ellerinesaglik"]
+
+# 😊 "RİCA EDERİM" TÜRÜ KARŞILIK KALIPLARI (kullanıcı bota teşekkür ettiğinde bot cevap veriyor;
+# ama kullanıcı "rica ederim" derse bota bir onay/nezaket cevabı gerekiyor)
+YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil"]
+
 # 🏗️ "KİM YAPTI" SORU KALIPLARI (boşluksuz/bitişik hâliyle de kontrol edilecek)
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
@@ -301,6 +308,18 @@ def ask():
         if is_buddy_mode:
             return jsonify({"reply": "Naber kanka! ARIES AI hazır, ne soruyoruz? 😎"})
         return jsonify({"reply": "Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?"})
+
+    # 🙏 Teşekkür Kontrolü ("teşekkürler", "sağol", "eyvallah" vb. — fuzzy eşleşme ile yazım hatalarını da tolere eder)
+    if any(fuzzy_word_in(w, THANKS_WORDS, cutoff=0.75) for w in fixed_words):
+        save_log("CEVAPLANDI")
+        if is_buddy_mode:
+            return jsonify({"reply": "Rica ederim kanka, başka bir sorun olursa buradayım! 🙌"})
+        return jsonify({"reply": "Rica ederim, başka bir konuda yardımcı olabilirim."})
+
+    # 😊 "Rica ederim / bir şey değil" Kontrolü (kullanıcı bota bu şekilde karşılık verdiğinde)
+    if any(p in norm_msg_nospace for p in YOURE_WELCOME_WORDS):
+        save_log("CEVAPLANDI")
+        return jsonify({"reply": "Ne demek, her zaman yardımcı olmaktan memnuniyet duyarım. 😊"})
 
     # 🔢 Matematik Motoru (güvenli hesaplayıcı ile)
     math_message = user_message.replace(",", ".")
