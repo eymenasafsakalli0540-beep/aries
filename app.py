@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 
 import ast
 import operator
@@ -9,8 +9,422 @@ import re
 from difflib import get_close_matches
 from datetime import datetime
 
+# 🌐 ÇEVİRİ MOTORU (dil modu ve /çevir komutu için)
+# Sunucuda kurulu değilse çeviri özellikleri sessizce devre dışı kalır.
+try:
+    from deep_translator import GoogleTranslator
+    TRANSLATOR_AVAILABLE = True
+except ImportError:
+    TRANSLATOR_AVAILABLE = False
+
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
+
+# 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-RUSÇA SÖZLÜK — dictionary_tr_ru.html'den alınmıştır
+# anahtar: normalize edilmiş türkçe kelime -> (rusça, latin okunuş)
+RU_DICTIONARY = {
+    'merhaba': ('Привет', 'Privet'),
+    'gunaydin': ('Доброе утро', 'Dobroye utro'),
+    'iyi gunler': ('Добрый день', 'Dobriy den'),
+    'iyi aksamlar': ('Добрый вечер', 'Dobriy vecher'),
+    'iyi geceler': ('Спокойной ночи', 'Spokoynoy nochi'),
+    'nasilsin': ('Как дела?', 'Kak dela?'),
+    'iyiyim': ('Хорошо', 'Khorosho'),
+    'fena degilim': ('Неплохо', 'Neplokho'),
+    'tesekkur ederim': ('Спасибо', 'Spasibo'),
+    'rica ederim': ('Пожалуйста', 'Pozhaluysta'),
+    'evet': ('Да', 'Da'),
+    'hayir': ('Нет', 'Net'),
+    'lutfen': ('Пожалуйста', 'Pozhaluysta'),
+    'ozur dilerim': ('Извините', 'Izvinite'),
+    'gule gule': ('Пока', 'Poka'),
+    'gorusuruz': ('До встречи', 'Do vstrechi'),
+    'adin ne': ('Как тебя зовут?', 'Kak tebya zovut?'),
+    'benim adim': ('Меня зовут...', 'Menya zovut...'),
+    'memnun oldum': ('Приятно познакомиться', 'Priyatno poznakomitsya'),
+    'kac yasindasin': ('Сколько тебе лет?', 'Skolko tebe let?'),
+    '...yasindayim': ('Мне ... лет', 'Mne ... let'),
+    'hos geldin': ('Добро пожаловать', 'Dobro pozhalovat'),
+    'nerelisin': ('Откуда ты?', 'Otkuda ty?'),
+    "ben turkiye'denim": ('Я из Турции', 'Ya iz Turtsii'),
+    "ben belarus'tanim": ('Я из Беларуси', 'Ya iz Belarusi'),
+    'sifir': ('ноль', 'nol'),
+    'bir': ('один', 'odin'),
+    'iki': ('два', 'dva'),
+    'uc': ('три', 'tri'),
+    'dort': ('четыре', 'chetyre'),
+    'bes': ('пять', 'pyat'),
+    'alti': ('шесть', 'shest'),
+    'yedi': ('семь', 'sem'),
+    'sekiz': ('восемь', 'vosem'),
+    'dokuz': ('девять', 'devyat'),
+    'on': ('десять', 'desyat'),
+    'on bir': ('одиннадцать', 'odinnadtsat'),
+    'on iki': ('двенадцать', 'dvenadtsat'),
+    'on uc': ('тринадцать', 'trinadtsat'),
+    'on dort': ('четырнадцать', 'chetyrnadtsat'),
+    'on bes': ('пятнадцать', 'pyatnadtsat'),
+    'on alti': ('шестнадцать', 'shestnadtsat'),
+    'on yedi': ('семнадцать', 'semnadtsat'),
+    'on sekiz': ('восемнадцать', 'vosemnadtsat'),
+    'on dokuz': ('девятнадцать', 'devyatnadtsat'),
+    'yirmi': ('двадцать', 'dvadtsat'),
+    'otuz': ('тридцать', 'tridtsat'),
+    'kirk': ('сорок', 'sorok'),
+    'elli': ('пятьдесят', 'pyatdesyat'),
+    'yuz': ('сто', 'sto'),
+    'kirmizi': ('красный', 'krasniy'),
+    'mavi': ('синий', 'siniy'),
+    'yesil': ('зелёный', 'zelyoniy'),
+    'sari': ('жёлтый', 'zholtiy'),
+    'turuncu': ('оранжевый', 'oranzheviy'),
+    'mor': ('фиолетовый', 'fioletoviy'),
+    'pembe': ('розовый', 'rozoviy'),
+    'siyah': ('чёрный', 'chorniy'),
+    'beyaz': ('белый', 'beliy'),
+    'kahverengi': ('коричневый', 'korichneviy'),
+    'gri': ('серый', 'seriy'),
+    'anne': ('мама', 'mama'),
+    'baba': ('папа', 'papa'),
+    'kiz kardes': ('сестра', 'sestra'),
+    'erkek kardes': ('брат', 'brat'),
+    'buyukanne': ('бабушка', 'babushka'),
+    'buyukbaba': ('дедушка', 'dedushka'),
+    'teyze / hala': ('тётя', 'tyotya'),
+    'amca / dayi': ('дядя', 'dyadya'),
+    'arkadas': ('друг', 'drug'),
+    'aile': ('семья', 'semya'),
+    'okul': ('школа', 'shkola'),
+    'ogretmen': ('учитель', 'uchitel'),
+    'ogrenci': ('ученик', 'uchenik'),
+    'ders': ('урок', 'urok'),
+    'odev': ('домашнее задание', 'domashneye zadaniye'),
+    'kitap': ('книга', 'kniga'),
+    'defter': ('тетрадь', 'tetrad'),
+    'kalem (tukenmez)': ('ручка', 'ruchka'),
+    'kursun kalem': ('карандаш', 'karandash'),
+    'silgi': ('ластик', 'lastik'),
+    'sinif': ('класс', 'klass'),
+    'tahta': ('доска', 'doska'),
+    'soru': ('вопрос', 'vopros'),
+    'cevap': ('ответ', 'otvet'),
+    'sinav': ('экзамен', 'ekzamen'),
+    'teneffus': ('перемена', 'peremena'),
+    'okumak': ('читать', 'chitat'),
+    'yazmak': ('писать', 'pisat'),
+    'dinlemek': ('слушать', 'slushat'),
+    'konusmak': ('говорить', 'govorit'),
+    'anlamak': ('понимать', 'ponimat'),
+    'tekrar eder misin': ('Повтори, пожалуйста', 'Povtori, pozhaluysta'),
+    'anlamadim': ('Я не понимаю', 'Ya ne ponimayu'),
+    'anladim': ('Я понял / поняла', 'Ya ponyal / ponyala'),
+    'yardim eder misin': ('Помоги мне, пожалуйста', 'Pomogi mne, pozhaluysta'),
+    'canta': ('сумка', 'sumka'),
+    'sira': ('парта', 'parta'),
+    'sandalye': ('стул', 'stul'),
+    'pencere': ('окно', 'okno'),
+    'kapi': ('дверь', 'dver'),
+    'pazartesi': ('понедельник', 'ponedelnik'),
+    'sali': ('вторник', 'vtornik'),
+    'carsamba': ('среда', 'sreda'),
+    'persembe': ('четверг', 'chetverg'),
+    'cuma': ('пятница', 'pyatnitsa'),
+    'cumartesi': ('суббота', 'subbota'),
+    'pazar': ('воскресенье', 'voskresenye'),
+    'bugun': ('сегодня', 'segodnya'),
+    'yarin': ('завтра', 'zavtra'),
+    'dun': ('вчера', 'vchera'),
+    'ocak': ('январь', 'yanvar'),
+    'subat': ('февраль', 'fevral'),
+    'mart': ('март', 'mart'),
+    'nisan': ('апрель', 'aprel'),
+    'mayis': ('май', 'may'),
+    'haziran': ('июнь', 'iyun'),
+    'temmuz': ('июль', 'iyul'),
+    'agustos': ('август', 'avgust'),
+    'eylul': ('сентябрь', 'sentyabr'),
+    'ekim': ('октябрь', 'oktyabr'),
+    'kasim': ('ноябрь', 'noyabr'),
+    'aralik': ('декабрь', 'dekabr'),
+    'ekmek': ('хлеб', 'khleb'),
+    'su': ('вода', 'voda'),
+    'sut': ('молоко', 'moloko'),
+    'elma': ('яблоко', 'yabloko'),
+    'muz': ('банан', 'banan'),
+    'cikolata': ('шоколад', 'shokolad'),
+    'seker': ('конфета', 'konfeta'),
+    'yemek': ('еда', 'yeda'),
+    'kahvalti': ('завтрак', 'zavtrak'),
+    'ogle yemegi': ('обед', 'obed'),
+    'aksam yemegi': ('ужин', 'uzhin'),
+    'aciktim': ('Я хочу есть', 'Ya khochu yest'),
+    'susadim': ('Я хочу пить', 'Ya khochu pit'),
+    'kedi': ('кошка', 'koshka'),
+    'kopek': ('собака', 'sobaka'),
+    'kus': ('птица', 'ptitsa'),
+    'balik': ('рыба', 'ryba'),
+    'at': ('лошадь', 'loshad'),
+    'tavsan': ('заяц', 'zayats'),
+    'ayi': ('медведь', 'medved'),
+    'aslan': ('лев', 'lev'),
+    'bas': ('голова', 'golova'),
+    'el': ('рука', 'ruka'),
+    'ayak': ('нога', 'noga'),
+    'goz': ('глаз', 'glaz'),
+    'kulak': ('ухо', 'ukho'),
+    'agiz': ('рот', 'rot'),
+    'burun': ('нос', 'nos'),
+    'sac': ('волосы', 'volosy'),
+    'mutlu': ('счастливый', 'schastliviy'),
+    'uzgun': ('грустный', 'grustniy'),
+    'kizgin': ('злой', 'zloy'),
+    'yorgun': ('усталый', 'ustaliy'),
+    'heyecanli': ('взволнованный', 'vzvolnovanniy'),
+    'korkmus': ('испуганный', 'ispuganniy'),
+    'iyi': ('хорошо', 'khorosho'),
+    'kotu': ('плохо', 'plokho'),
+    'gitmek': ('идти', 'idti'),
+    'gelmek': ('приходить', 'prikhodit'),
+    'yemek (fiil)': ('есть', 'yest'),
+    'icmek': ('пить', 'pit'),
+    'oynamak': ('играть', 'igrat'),
+    'kosmak': ('бегать', 'begat'),
+    'uyumak': ('спать', 'spat'),
+    'gulmek': ('смеяться', 'smeyatsya'),
+    'aglamak': ('плакать', 'plakat'),
+    'hoslanmak / sevmek': ('нравиться', 'nravitsya'),
+    'yardim etmek': ('помогать', 'pomogat'),
+    'benimle oynar misin': ('Поиграешь со мной?', 'Poigraesh so mnoy?'),
+    'bu ne': ('Что это?', 'Chto eto?'),
+    'bu kim': ('Кто это?', 'Kto eto?'),
+    'nerede tuvalet': ('Где туалет?', 'Gde tualet?'),
+    'yardima ihtiyacim var': ('Мне нужна помощь', 'Mne nuzhna pomoshch'),
+    'ben hazirim': ('Я готов / готова', 'Ya gotov / gotova'),
+    'sira sende': ('Твоя очередь', 'Tvoya ochered'),
+    'harika': ('Отлично!', 'Otlichno!'),
+    'tebrikler': ('Поздравляю!', 'Pozdravlyayu!'),
+    'gorusmek uzere': ('Увидимся', 'Uvidimsya'),
+    'saat kac': ('Который час?', 'Kotoriy chas?'),
+    'simdi': ('сейчас', 'seychas'),
+    'sonra': ('потом', 'potom'),
+    'erken': ('рано', 'rano'),
+    'gec': ('поздно', 'pozdno'),
+    'gunesli': ('солнечно', 'solnechno'),
+    'yagmurlu': ('дождливо', 'dozhdlivo'),
+    'karli': ('снежно', 'snezhno'),
+    'ruzgarli': ('ветрено', 'vetreno'),
+    'sicak': ('жарко', 'zharko'),
+    'soguk': ('холодно', 'kholodno'),
+    'ne': ('Что?', 'Chto?'),
+    'kim': ('Кто?', 'Kto?'),
+    'nerede': ('Где?', 'Gde?'),
+    'ne zaman': ('Когда?', 'Kogda?'),
+    'neden': ('Почему?', 'Pochemu?'),
+    'nasil': ('Как?', 'Kak?'),
+    'kac tane': ('Сколько?', 'Skolko?'),
+}
+
+# Ters yönde arama için (Rusça -> Türkçe)
+RU_TO_TR_DICTIONARY = {
+    'привет': 'Merhaba',
+    'доброе утро': 'Günaydın',
+    'добрый день': 'İyi günler',
+    'добрый вечер': 'İyi akşamlar',
+    'спокойной ночи': 'İyi geceler',
+    'как дела': 'Nasılsın?',
+    'хорошо': 'İyiyim',
+    'неплохо': 'Fena değilim',
+    'спасибо': 'Teşekkür ederim',
+    'пожалуйста': 'Rica ederim',
+    'да': 'Evet',
+    'нет': 'Hayır',
+    'извините': 'Özür dilerim',
+    'пока': 'Güle güle',
+    'до встречи': 'Görüşürüz',
+    'как тебя зовут': 'Adın ne?',
+    'меня зовут': 'Benim adım...',
+    'приятно познакомиться': 'Memnun oldum',
+    'сколько тебе лет': 'Kaç yaşındasın?',
+    'мне ... лет': '...yaşındayım',
+    'добро пожаловать': 'Hoş geldin',
+    'откуда ты': 'Nerelisin?',
+    'я из турции': "Ben Türkiye'denim",
+    'я из беларуси': "Ben Belarus'tanım",
+    'ноль': 'sıfır',
+    'один': 'bir',
+    'два': 'iki',
+    'три': 'üç',
+    'четыре': 'dört',
+    'пять': 'beş',
+    'шесть': 'altı',
+    'семь': 'yedi',
+    'восемь': 'sekiz',
+    'девять': 'dokuz',
+    'десять': 'on',
+    'одиннадцать': 'on bir',
+    'двенадцать': 'on iki',
+    'тринадцать': 'on üç',
+    'четырнадцать': 'on dört',
+    'пятнадцать': 'on beş',
+    'шестнадцать': 'on altı',
+    'семнадцать': 'on yedi',
+    'восемнадцать': 'on sekiz',
+    'девятнадцать': 'on dokuz',
+    'двадцать': 'yirmi',
+    'тридцать': 'otuz',
+    'сорок': 'kırk',
+    'пятьдесят': 'elli',
+    'сто': 'yüz',
+    'красный': 'kırmızı',
+    'синий': 'mavi',
+    'зелёный': 'yeşil',
+    'жёлтый': 'sarı',
+    'оранжевый': 'turuncu',
+    'фиолетовый': 'mor',
+    'розовый': 'pembe',
+    'чёрный': 'siyah',
+    'белый': 'beyaz',
+    'коричневый': 'kahverengi',
+    'серый': 'gri',
+    'мама': 'anne',
+    'папа': 'baba',
+    'сестра': 'kız kardeş',
+    'брат': 'erkek kardeş',
+    'бабушка': 'büyükanne',
+    'дедушка': 'büyükbaba',
+    'тётя': 'teyze / hala',
+    'дядя': 'amca / dayı',
+    'друг': 'arkadaş',
+    'семья': 'aile',
+    'школа': 'okul',
+    'учитель': 'öğretmen',
+    'ученик': 'öğrenci',
+    'урок': 'ders',
+    'домашнее задание': 'ödev',
+    'книга': 'kitap',
+    'тетрадь': 'defter',
+    'ручка': 'kalem (tükenmez)',
+    'карандаш': 'kurşun kalem',
+    'ластик': 'silgi',
+    'класс': 'sınıf',
+    'доска': 'tahta',
+    'вопрос': 'soru',
+    'ответ': 'cevap',
+    'экзамен': 'sınav',
+    'перемена': 'teneffüs',
+    'читать': 'okumak',
+    'писать': 'yazmak',
+    'слушать': 'dinlemek',
+    'говорить': 'konuşmak',
+    'понимать': 'anlamak',
+    'повтори, пожалуйста': 'Tekrar eder misin?',
+    'я не понимаю': 'Anlamadım',
+    'я понял / поняла': 'Anladım',
+    'помоги мне, пожалуйста': 'Yardım eder misin?',
+    'сумка': 'çanta',
+    'парта': 'sıra',
+    'стул': 'sandalye',
+    'окно': 'pencere',
+    'дверь': 'kapı',
+    'понедельник': 'Pazartesi',
+    'вторник': 'Salı',
+    'среда': 'Çarşamba',
+    'четверг': 'Perşembe',
+    'пятница': 'Cuma',
+    'суббота': 'Cumartesi',
+    'воскресенье': 'Pazar',
+    'сегодня': 'bugün',
+    'завтра': 'yarın',
+    'вчера': 'dün',
+    'январь': 'Ocak',
+    'февраль': 'Şubat',
+    'март': 'Mart',
+    'апрель': 'Nisan',
+    'май': 'Mayıs',
+    'июнь': 'Haziran',
+    'июль': 'Temmuz',
+    'август': 'Ağustos',
+    'сентябрь': 'Eylül',
+    'октябрь': 'Ekim',
+    'ноябрь': 'Kasım',
+    'декабрь': 'Aralık',
+    'хлеб': 'ekmek',
+    'вода': 'su',
+    'молоко': 'süt',
+    'яблоко': 'elma',
+    'банан': 'muz',
+    'шоколад': 'çikolata',
+    'конфета': 'şeker',
+    'еда': 'yemek',
+    'завтрак': 'kahvaltı',
+    'обед': 'öğle yemeği',
+    'ужин': 'akşam yemeği',
+    'я хочу есть': 'Acıktım',
+    'я хочу пить': 'Susadım',
+    'кошка': 'kedi',
+    'собака': 'köpek',
+    'птица': 'kuş',
+    'рыба': 'balık',
+    'лошадь': 'at',
+    'заяц': 'tavşan',
+    'медведь': 'ayı',
+    'лев': 'aslan',
+    'голова': 'baş',
+    'рука': 'el',
+    'нога': 'ayak',
+    'глаз': 'göz',
+    'ухо': 'kulak',
+    'рот': 'ağız',
+    'нос': 'burun',
+    'волосы': 'saç',
+    'счастливый': 'mutlu',
+    'грустный': 'üzgün',
+    'злой': 'kızgın',
+    'усталый': 'yorgun',
+    'взволнованный': 'heyecanlı',
+    'испуганный': 'korkmuş',
+    'плохо': 'kötü',
+    'идти': 'gitmek',
+    'приходить': 'gelmek',
+    'есть': 'yemek (fiil)',
+    'пить': 'içmek',
+    'играть': 'oynamak',
+    'бегать': 'koşmak',
+    'спать': 'uyumak',
+    'смеяться': 'gülmek',
+    'плакать': 'ağlamak',
+    'нравиться': 'hoşlanmak / sevmek',
+    'помогать': 'yardım etmek',
+    'поиграешь со мной': 'Benimle oynar mısın?',
+    'что это': 'Bu ne?',
+    'кто это': 'Bu kim?',
+    'где туалет': 'Nerede tuvalet?',
+    'мне нужна помощь': 'Yardıma ihtiyacım var',
+    'я готов / готова': 'Ben hazırım',
+    'твоя очередь': 'Sıra sende',
+    'отлично': 'Harika!',
+    'поздравляю': 'Tebrikler!',
+    'увидимся': 'Görüşmek üzere',
+    'который час': 'Saat kaç?',
+    'сейчас': 'şimdi',
+    'потом': 'sonra',
+    'рано': 'erken',
+    'поздно': 'geç',
+    'солнечно': 'güneşli',
+    'дождливо': 'yağmurlu',
+    'снежно': 'karlı',
+    'ветрено': 'rüzgarlı',
+    'жарко': 'sıcak',
+    'холодно': 'soğuk',
+    'что': 'Ne?',
+    'кто': 'Kim?',
+    'где': 'Nerede?',
+    'когда': 'Ne zaman?',
+    'почему': 'Neden?',
+    'как': 'Nasıl?',
+    'сколько': 'Kaç tane?',
+}
 
 # 🌍 COĞRAFYA VERİ TABANI
 
@@ -144,6 +558,71 @@ YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "on
 
 # 🏗️ "KİM YAPTI" SORU KALIPLARI (boşluksuz/bitişik hâliyle de kontrol edilecek)
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
+
+# 🗣️ "DO YOU SPEAK ENGLISH/RUSSIAN" TÜRÜ DİL SORULARI
+LANGUAGE_PHRASES = {
+    "english": ["do you speak english", "can you speak english", "speak english", "ingilizce biliyor musun", "ingilizce konusuyor musun"],
+    "russian": ["do you speak russian", "can you speak russian", "speak russian", "rusca biliyor musun", "rusca konusuyor musun",
+                "ты говоришь порусски", "говоришь порусски", "вы говорите порусски"],
+}
+
+# 🇹🇷 TEKRAR TÜRKÇEYE DÖNME KALIPLARI
+LANGUAGE_RESET_PHRASES = ["turkce konus", "turkceye don", "turkce devam et", "speak turkish", "turkish konus"]
+
+# 🔁 "X'i İngilizceye/Rusçaya çevir" / "translate X to english/russian" KALIPLARI
+TRANSLATE_TO_EN_TR = re.compile(r'^(.+?)\s*(?:kelimesini|ifadesini|cümlesini|cumlesini)?\s*ingilizceye\s*çevir\.?$', re.IGNORECASE)
+TRANSLATE_TO_RU_TR = re.compile(r'^(.+?)\s*(?:kelimesini|ifadesini|cümlesini|cumlesini)?\s*rusçaya\s*çevir\.?$', re.IGNORECASE)
+TRANSLATE_TO_EN_ENG = re.compile(r'^translate\s+(.+?)\s+to\s+english\.?$', re.IGNORECASE)
+TRANSLATE_TO_RU_ENG = re.compile(r'^translate\s+(.+?)\s+to\s+russian\.?$', re.IGNORECASE)
+
+
+def normalize_tr(s):
+    """Sözlük anahtarlarıyla birebir aynı normalizasyonu uygular
+    (büyük 'İ' harfi sorunu dahil doğru şekilde ele alınır)."""
+    s = s.replace("İ", "i").replace("I", "ı")
+    s = s.lower().strip()
+    s = s.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
+    s = s.rstrip("?!.,")
+    return s
+
+
+def parse_translation_command(text):
+    """'X'i ingilizceye çevir' / 'translate X to russian' gibi doğrudan çeviri
+    komutlarını yakalar. Eşleşme varsa (çevrilecek_metin, hedef_dil_kodu) döner."""
+    text = text.strip()
+    for pattern, target in [(TRANSLATE_TO_EN_TR, 'en'), (TRANSLATE_TO_RU_TR, 'ru'),
+                             (TRANSLATE_TO_EN_ENG, 'en'), (TRANSLATE_TO_RU_ENG, 'ru')]:
+        m = pattern.match(text)
+        if m:
+            return m.group(1).strip(), target
+    return None, None
+
+
+def translate_html_preserving_tags(html_text, target_lang):
+    """HTML etiketlerini (<b>, <span> vb.) bozmadan sadece metin kısımlarını çevirir."""
+    if not TRANSLATOR_AVAILABLE:
+        return html_text
+    try:
+        translator = GoogleTranslator(source='tr', target=target_lang)
+        segments = re.split(r'(<[^>]+>)', html_text)
+        translated_segments = []
+        for seg in segments:
+            if seg == '' or seg.startswith('<'):
+                translated_segments.append(seg)
+            else:
+                translated_segments.append(translator.translate(seg))
+        return ''.join(translated_segments)
+    except Exception:
+        return html_text
+
+
+def build_reply(text):
+    """Kullanıcı 'do you speak english/russian' dediyse, o dil modu session'da
+    kayıtlıdır; bu fonksiyon her cevabı otomatik olarak o dile çevirip döner."""
+    target = session.get('lang')
+    if target in ('en', 'ru'):
+        text = translate_html_preserving_tags(text, target)
+    return jsonify({"reply": text})
 
 
 def calculate_haversine(lat1, lon1, lat2, lon2):
@@ -295,31 +774,72 @@ def ask():
     # ("naber" artık kanka modunu tetiklemiyor; varsayılan ton ciddi/nazik kalır.)
     is_buddy_mode = "kanka" in norm_msg
 
+    # 🔁 Doğrudan Çeviri Komutu ("kedi'yi ingilizceye çevir", "translate cat to russian")
+    phrase_to_translate, translate_target = parse_translation_command(raw_message)
+    if phrase_to_translate:
+        # Rusça için önce internetsiz yerel sözlüğe bakıyoruz (hızlı ve internetsiz çalışır)
+        if translate_target == 'ru':
+            key = normalize_tr(phrase_to_translate)
+            if key in RU_DICTIONARY:
+                ru_word, translit = RU_DICTIONARY[key]
+                save_log("CEVAPLANDI")
+                return jsonify({"reply": f'<span class="expert-badge badge-sozel">Sözlük (RU)</span><br><b>{phrase_to_translate}</b> → <b>{ru_word}</b><br><span style="opacity:0.7;font-style:italic;">({translit})</span>'})
+        # İngilizce veya sözlükte bulunamayan Rusça için (varsa) internet üzerinden çeviri
+        if TRANSLATOR_AVAILABLE:
+            try:
+                translated = GoogleTranslator(source='auto', target=translate_target).translate(phrase_to_translate)
+                save_log("CEVAPLANDI")
+                badge_label = "Translation" if translate_target == "en" else "Перевод"
+                return jsonify({"reply": f'<span class="expert-badge badge-sozel">{badge_label}</span><br><b>{phrase_to_translate}</b> → <b>{translated}</b>'})
+            except Exception:
+                save_log("HATA")
+                return jsonify({"reply": "Çeviri sırasında bir hata oluştu, lütfen tekrar deneyin. / Translation error, please try again."})
+        else:
+            save_log("HATA")
+            return jsonify({"reply": "Bu kelime yerel sözlükte bulunamadı ve online çeviri şu an kullanılamıyor."})
+
+    # 🇹🇷 Tekrar Türkçeye Dönme Kontrolü
+    if any(p in norm_msg for p in LANGUAGE_RESET_PHRASES):
+        session['lang'] = None
+        save_log("CEVAPLANDI")
+        return jsonify({"reply": "Tamam, Türkçe devam ediyorum. 🇹🇷"})
+
+    # 🗣️ Dil Sorusu Kontrolü ("do you speak english/russian" vb.) — cevap verdikten sonra
+    # o dilde konuşmaya devam etmek için session'a dil modu kaydediliyor.
+    if any(p in norm_msg for p in LANGUAGE_PHRASES["english"]):
+        session['lang'] = 'en'
+        save_log("CEVAPLANDI")
+        return jsonify({"reply": "Yes, I speak English! From now on I'll reply in English — ask me anything. Say 'türkçe konuş' anytime to switch back. 🇬🇧"})
+    if any(p in norm_msg for p in LANGUAGE_PHRASES["russian"]):
+        session['lang'] = 'ru'
+        save_log("CEVAPLANDI")
+        return jsonify({"reply": "Да, я говорю по-русски! Теперь буду отвечать по-русски — спрашивайте что угодно. Скажите «türkçe konuş», чтобы вернуться к турецкому. 🇷🇺"})
+
     # 🏗️ Yapımcı Kontrolü (bitişik yazımı da destekler: "seni kimyaptı")
     if any(p in norm_msg for p in CREATOR_PHRASES) or any(p.replace(" ", "") in norm_msg_nospace for p in CREATOR_PHRASES):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
-            return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>MİC</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀'})
-        return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni <b>MİC</b> geliştirdi. Adım <b>ARIES AI</b>.'})
+            return build_reply('<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>MİC</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀')
+        return build_reply('<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni <b>MİC</b> geliştirdi. Adım <b>ARIES AI</b>.')
 
     # 👋 Selamlaşma Kontrolü (fuzzy: "naber", "marhaba dostum" gibi yazım hatalarını da yakalar)
     if any(fuzzy_word_in(w, GREETING_WORDS) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
-            return jsonify({"reply": "Naber kanka! ARIES AI hazır, ne soruyoruz? 😎"})
-        return jsonify({"reply": "Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?"})
+            return build_reply("Naber kanka! ARIES AI hazır, ne soruyoruz? 😎")
+        return build_reply("Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?")
 
     # 🙏 Teşekkür Kontrolü ("teşekkürler", "sağol", "eyvallah" vb. — fuzzy eşleşme ile yazım hatalarını da tolere eder)
     if any(fuzzy_word_in(w, THANKS_WORDS, cutoff=0.75) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
-            return jsonify({"reply": "Rica ederim kanka, başka bir sorun olursa buradayım! 🙌"})
-        return jsonify({"reply": "Rica ederim, başka bir konuda yardımcı olabilirim."})
+            return build_reply("Rica ederim kanka, başka bir sorun olursa buradayım! 🙌")
+        return build_reply("Rica ederim, başka bir konuda yardımcı olabilirim.")
 
     # 😊 "Rica ederim / bir şey değil" Kontrolü (kullanıcı bota bu şekilde karşılık verdiğinde)
     if any(p in norm_msg_nospace for p in YOURE_WELCOME_WORDS):
         save_log("CEVAPLANDI")
-        return jsonify({"reply": "Ne demek, her zaman yardımcı olmaktan memnuniyet duyarım. 😊"})
+        return build_reply("Ne demek, her zaman yardımcı olmaktan memnuniyet duyarım. 😊")
 
     # 🔢 Matematik Motoru (güvenli hesaplayıcı ile)
     math_message = user_message.replace(",", ".")
@@ -328,36 +848,36 @@ def ask():
         try:
             result = safe_math_eval(math_message)
             save_log("CEVAPLANDI")
-            return jsonify({"reply": f'<span class="expert-badge badge-sayisal">Matematiksel Analiz</span><br><div class="formula-box">{user_message} = {result}</div>'})
+            return build_reply(f'<span class="expert-badge badge-sayisal">Matematiksel Analiz</span><br><div class="formula-box">{user_message} = {result}</div>')
         except Exception:
             save_log("HATA")
             if is_buddy_mode:
-                return jsonify({"reply": "İşlem hesaplanamadı kanka, sayılar çok büyük olabilir ya da ifade geçersiz. Kontrol et."})
-            return jsonify({"reply": "İşlem hesaplanamadı. Sayılar çok büyük olabilir ya da ifade geçersiz görünüyor, lütfen kontrol edin."})
+                return build_reply("İşlem hesaplanamadı kanka, sayılar çok büyük olabilir ya da ifade geçersiz. Kontrol et.")
+            return build_reply("İşlem hesaplanamadı. Sayılar çok büyük olabilir ya da ifade geçersiz görünüyor, lütfen kontrol edin.")
 
     # 🧬 Anatomi ve Fen Bilgisi Kontrolü
     for key, response in science_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
-            return jsonify({"reply": f'<span class="expert-badge badge-sayisal" style="background-color:#00e676; color:black;">Fen Bilimleri & Anatomi</span><br>{response}'})
+            return build_reply(f'<span class="expert-badge badge-sayisal" style="background-color:#00e676; color:black;">Fen Bilimleri & Anatomi</span><br>{response}')
 
     # ⚡ Fizik ve Geometri Kontrolü
     for key, response in physics_geometry_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
-            return jsonify({"reply": f'<span class="expert-badge badge-sayisal" style="background-color:#ff9100; color:black;">Fizik & Geometri</span><br>{response}'})
+            return build_reply(f'<span class="expert-badge badge-sayisal" style="background-color:#ff9100; color:black;">Fizik & Geometri</span><br>{response}')
 
     # 🕋 Dini Terimler Kontrolü
     for key, response in religious_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
-            return jsonify({"reply": f'<span class="expert-badge badge-sozel" style="background-color:#9c27b0;">İslami Tarih</span><br>{response}'})
+            return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#9c27b0;">İslami Tarih</span><br>{response}')
 
     # 📜 Tarih Kontrolü
     for key, response in historical_events.items():
         if key.replace("ı", "i").replace("ğ", "g") in norm_msg:
             save_log("CEVAPLANDI")
-            return jsonify({"reply": f'<span class="expert-badge badge-sozel">Tarih Bilgisi</span><br>{response}'})
+            return build_reply(f'<span class="expert-badge badge-sozel">Tarih Bilgisi</span><br>{response}')
 
     # 🌍 Coğrafya Kontrolü
     matched_countries = []
@@ -368,15 +888,15 @@ def ask():
     if len(matched_countries) >= 2:
         distance = calculate_haversine(matched_countries[0]["lat"], matched_countries[0]["lon"], matched_countries[1]["lat"], matched_countries[1]["lon"])
         save_log("CEVAPLANDI")
-        return jsonify({"reply": f'<span class="expert-badge badge-cografya">Rota Analizi</span><br>📐 <b>Mesafe:</b> ~{distance} Kilometre'})
+        return build_reply(f'<span class="expert-badge badge-cografya">Rota Analizi</span><br>📐 <b>Mesafe:</b> ~{distance} Kilometre')
     elif len(matched_countries) == 1:
         save_log("CEVAPLANDI")
-        return jsonify({"reply": f'<span class="expert-badge badge-cografya">Coğrafya</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}'})
+        return build_reply(f'<span class="expert-badge badge-cografya">Coğrafya</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}')
 
     save_log("CEVAPLANAMADI")
     if is_buddy_mode:
-        return jsonify({"reply": "ARIES bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka. Matematik, fen, fizik, geometri, anatomi, tarih veya coğrafya sormayı dene!"})
-    return jsonify({"reply": "ARIES bu soruyu analiz etti ancak tam bir eşleşme bulamadı. Matematik, fen bilimleri, fizik, geometri, anatomi, tarih veya coğrafya ile ilgili bir soru sormayı deneyebilirsiniz."})
+        return build_reply("ARIES bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka. Matematik, fen, fizik, geometri, anatomi, tarih veya coğrafya sormayı dene!")
+    return build_reply("ARIES bu soruyu analiz etti ancak tam bir eşleşme bulamadı. Matematik, fen bilimleri, fizik, geometri, anatomi, tarih veya coğrafya ile ilgili bir soru sormayı deneyebilirsiniz.")
 
 
 if __name__ == '__main__':
