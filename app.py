@@ -299,8 +299,8 @@ def ask():
     if any(p in norm_msg for p in CREATOR_PHRASES) or any(p.replace(" ", "") in norm_msg_nospace for p in CREATOR_PHRASES):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
-            return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>TÜW</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀'})
-        return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni <b>TÜW</b> geliştirdi. Adım <b>ARIES AI</b>.'})
+            return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>MİC</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀'})
+        return jsonify({"reply": '<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni <b>MİC</b> geliştirdi. Adım <b>ARIES AI</b>.'})
 
     # 👋 Selamlaşma Kontrolü (fuzzy: "naber", "marhaba dostum" gibi yazım hatalarını da yakalar)
     if any(fuzzy_word_in(w, GREETING_WORDS) for w in fixed_words):
