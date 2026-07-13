@@ -21,6 +21,101 @@ except ImportError:
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
 
+# --------------------------------------------------------------------------
+# 🤖 GELİŞMİŞ YAPAY ZEKA DESTEĞİ (OPSİYONEL — "daha akıllı" cevaplar için)
+# --------------------------------------------------------------------------
+# ARIES aşağıdaki kural tabanlı sistemde (matematik, coğrafya, tarih, fen vb.)
+# bir eşleşme BULAMAZSA, buraya bir API anahtarı girersen o soruyu gerçek bir
+# yapay zeka modeline sorup daha akıllı/geniş kapsamlı bir cevap üretir.
+# Anahtar boş bırakılırsa hiçbir şey değişmez, mevcut kural tabanlı sistem
+# aynen çalışmaya devam eder (kod bozulmaz, sessizce devre dışı kalır).
+#
+# NASIL KULLANILIR:
+#   1) Aşağıya kendi API anahtarınızı yazın (ya da ortam değişkeni olarak verin).
+#   2) AI_API_PROVIDER'ı "openai", "anthropic" veya "gemini" olarak seçin.
+#   3) Sunucuyu başlatın — artık ARIES bilmediği soruları da cevaplayabilir.
+AI_API_KEY = os.environ.get("AQ.Ab8RN6L66M_i2NZ6-G_99hapOmSm8x_U5o00Y2Jv6fbTyW8aRw", "")        # <-- BURAYA KENDİ API ANAHTARINIZI GİRİN
+AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", "gemini")  # "openai", "anthropic" veya "gemini"
+AI_MODEL_OPENAI = "gpt-4o-mini"
+AI_MODEL_ANTHROPIC = "claude-3-5-haiku-20241022"
+AI_MODEL_GEMINI = "gemini-2.0-flash"
+
+
+def ask_ai_fallback(user_text, buddy_mode=False):
+    """Kural tabanlı sistem cevap bulamadığında çağrılır. AI_API_KEY boşsa None döner
+    ve ARIES normal 'bulamadım' cevabını verir. Anahtar varsa gerçek bir modele sorar."""
+    if not AI_API_KEY:
+        return None
+
+    system_prompt = (
+        "Sen ARIES AI adında Türkçe konuşan bir yapay zeka asistanısın. "
+        "Kısa, net ve doğru cevaplar ver. "
+        + ("Samimi ve arkadaşça (kanka diliyle) konuş." if buddy_mode else "Kibar ve profesyonel bir dille konuş.")
+    )
+
+    try:
+        if AI_API_PROVIDER == "gemini":
+            resp = requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL_GEMINI}:generateContent",
+                headers={"Content-Type": "application/json"},
+                params={"key": AI_API_KEY},
+                json={
+                    "systemInstruction": {"parts": [{"text": system_prompt}]},
+                    "contents": [{"role": "user", "parts": [{"text": user_text}]}],
+                    "generationConfig": {"maxOutputTokens": 500},
+                },
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            parts = data["candidates"][0]["content"]["parts"]
+            return "".join(p.get("text", "") for p in parts).strip() or None
+
+        elif AI_API_PROVIDER == "anthropic":
+            resp = requests.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": AI_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": AI_MODEL_ANTHROPIC,
+                    "max_tokens": 500,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": user_text}],
+                },
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return "".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text").strip() or None
+
+        else:  # openai
+            resp = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {AI_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": AI_MODEL_OPENAI,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_text},
+                    ],
+                    "max_tokens": 500,
+                },
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"].strip() or None
+
+    except Exception:
+        # API hatası/timeout olursa sessizce None dön, ARIES normal cevabına düşer.
+        return None
+
 # 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-RUSÇA SÖZLÜK — dictionary_tr_ru.html'den alınmıştır
 # anahtar: normalize edilmiş türkçe kelime -> (rusça, latin okunuş)
 RU_DICTIONARY = {
@@ -892,6 +987,13 @@ def ask():
     elif len(matched_countries) == 1:
         save_log("CEVAPLANDI")
         return build_reply(f'<span class="expert-badge badge-cografya">Coğrafya</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}')
+
+    # 🤖 Kural tabanlı sistemde eşleşme bulunamadı — AI_API_KEY girilmişse
+    # gerçek bir yapay zekaya sorup daha akıllı/geniş kapsamlı cevap üretmeyi dene.
+    ai_reply = ask_ai_fallback(raw_message, buddy_mode=is_buddy_mode)
+    if ai_reply:
+        save_log("CEVAPLANDI (AI)")
+        return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#8e44ad;">Genişletilmiş Zeka</span><br>{ai_reply}')
 
     save_log("CEVAPLANAMADI")
     if is_buddy_mode:
