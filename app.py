@@ -820,6 +820,7 @@ def home():
 
 @app.route('/api/get-logs', methods=['POST', 'OPTIONS'])
 def get_logs():
+    global MAINTENANCE_MODE
     response_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -842,12 +843,10 @@ def get_logs():
 
     # 🛠️ BAKIM MODU action'ları (EKLENTİ)
     if action == 'maintenance':
-        global MAINTENANCE_MODE
         MAINTENANCE_MODE = True
         return jsonify({"success": True, "maintenance": True}), 200, response_headers
 
     if action == 'resume':
-        global MAINTENANCE_MODE
         MAINTENANCE_MODE = False
         return jsonify({"success": True, "maintenance": False}), 200, response_headers
 
