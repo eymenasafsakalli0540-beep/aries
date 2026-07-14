@@ -22,6 +22,16 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
 
 # --------------------------------------------------------------------------
+# 🛠️ BAKIM MODU (EKLENTİ — mevcut koda dokunmadan eklendi)
+# --------------------------------------------------------------------------
+# MAINTENANCE_MODE True olduğunda ARIES tamamen durur: /ask endpoint'i
+# hiçbir kural tabanlı motoru (matematik, coğrafya, tarih, fen, AI fallback vb.)
+# çalıştırmadan direkt aşağıdaki sabit mesajı döner. Kontrol panelinden
+# /api/get-logs üzerinden 'maintenance' ve 'resume' action'larıyla açılıp kapanır.
+MAINTENANCE_MODE = False
+MAINTENANCE_MESSAGE = "Şu an bakım arasındayız."
+
+# --------------------------------------------------------------------------
 # 🤖 GELİŞMİŞ YAPAY ZEKA DESTEĞİ (OPSİYONEL — "daha akıllı" cevaplar için)
 # --------------------------------------------------------------------------
 # ARIES aşağıdaki kural tabanlı sistemde (matematik, coğrafya, tarih, fen vb.)
@@ -830,6 +840,20 @@ def get_logs():
             os.remove("sorular.txt")
         return jsonify({"success": True, "logs": []}), 200, response_headers
 
+    # 🛠️ BAKIM MODU action'ları (EKLENTİ)
+    if action == 'maintenance':
+        global MAINTENANCE_MODE
+        MAINTENANCE_MODE = True
+        return jsonify({"success": True, "maintenance": True}), 200, response_headers
+
+    if action == 'resume':
+        global MAINTENANCE_MODE
+        MAINTENANCE_MODE = False
+        return jsonify({"success": True, "maintenance": False}), 200, response_headers
+
+    if action == 'status':
+        return jsonify({"success": True, "maintenance": MAINTENANCE_MODE}), 200, response_headers
+
     if os.path.exists("sorular.txt"):
         with open("sorular.txt", "r", encoding="utf-8") as file:
             logs = file.readlines()
@@ -840,6 +864,12 @@ def get_logs():
 
 @app.route('/ask', methods=['POST'])
 def ask():
+    # 🛠️ BAKIM MODU KONTROLÜ (EKLENTİ) — MAINTENANCE_MODE açıkken hiçbir motor
+    # (çeviri, matematik, coğrafya, tarih, fen, AI fallback vb.) çalıştırılmaz;
+    # log bile tutulmadan direkt sabit mesaj döner. ARIES bu sırada tamamen durmuş sayılır.
+    if MAINTENANCE_MODE:
+        return jsonify({"reply": MAINTENANCE_MESSAGE, "maintenance": True})
+
     user_message = request.json.get("message", "").lower().strip()
     raw_message = request.json.get("message", "").strip()
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
