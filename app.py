@@ -150,8 +150,13 @@ def ask_ai_fallback(user_text, buddy_mode=False):
         return None
 
     system_prompt = (
-        "Sen ARIES AI adında Türkçe konuşan bir yapay zeka asistanısın. "
-        "Kısa, net ve doğru cevaplar ver. "
+        "Sen ARIES AI adında Türkçe konuşan, bilgili ve güvenilir bir yapay zeka asistanısın. "
+        "Özellikle tarih (Osmanlı, Türk Kurtuluş Savaşı, dünya tarihi), coğrafya, fen bilimleri, "
+        "fizik ve matematik konularında derinlemesine ve doğru bilgi ver. "
+        "Tarihle ilgili sorularda mümkünse tarih, önemli kişiler, sebep-sonuç ilişkisi ve tarihsel "
+        "önemini de kısaca belirt. Cevapların kısa ama bilgi yoğunluğu yüksek olsun; gereksiz "
+        "uzatmadan, doğrudan ve net konuş. Emin olmadığın veya kesin bilmediğin bir bilgiyi "
+        "kesinmiş gibi uydurma; belirsizse bunu açıkça belirt. "
         + ("Samimi ve arkadaşça (kanka diliyle) konuş." if buddy_mode else "Kibar ve profesyonel bir dille konuş.")
     )
 
@@ -623,6 +628,179 @@ RU_TO_TR_DICTIONARY = {
     'сколько': 'Kaç tane?',
 }
 
+# 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-İNGİLİZCE SÖZLÜK (EKLENTİ)
+# Rusça sözlükle aynı mantıkla — anahtar: normalize edilmiş türkçe kelime -> ingilizce karşılığı
+EN_DICTIONARY = {
+    'merhaba': 'Hello',
+    'gunaydin': 'Good morning',
+    'iyi gunler': 'Good day',
+    'iyi aksamlar': 'Good evening',
+    'iyi geceler': 'Good night',
+    'nasilsin': 'How are you?',
+    'iyiyim': 'I am fine',
+    'fena degilim': 'Not bad',
+    'tesekkur ederim': 'Thank you',
+    'rica ederim': 'You are welcome',
+    'evet': 'Yes',
+    'hayir': 'No',
+    'lutfen': 'Please',
+    'ozur dilerim': 'I am sorry',
+    'gule gule': 'Goodbye',
+    'gorusuruz': 'See you',
+    'adin ne': 'What is your name?',
+    'benim adim': 'My name is...',
+    'memnun oldum': 'Nice to meet you',
+    'kac yasindasin': 'How old are you?',
+    'hos geldin': 'Welcome',
+    'nerelisin': 'Where are you from?',
+    'sifir': 'zero',
+    'bir': 'one',
+    'iki': 'two',
+    'uc': 'three',
+    'dort': 'four',
+    'bes': 'five',
+    'alti': 'six',
+    'yedi': 'seven',
+    'sekiz': 'eight',
+    'dokuz': 'nine',
+    'on': 'ten',
+    'yirmi': 'twenty',
+    'otuz': 'thirty',
+    'kirk': 'forty',
+    'elli': 'fifty',
+    'yuz': 'one hundred',
+    'kirmizi': 'red',
+    'mavi': 'blue',
+    'yesil': 'green',
+    'sari': 'yellow',
+    'turuncu': 'orange',
+    'mor': 'purple',
+    'pembe': 'pink',
+    'siyah': 'black',
+    'beyaz': 'white',
+    'kahverengi': 'brown',
+    'gri': 'gray',
+    'anne': 'mother',
+    'baba': 'father',
+    'kiz kardes': 'sister',
+    'erkek kardes': 'brother',
+    'buyukanne': 'grandmother',
+    'buyukbaba': 'grandfather',
+    'arkadas': 'friend',
+    'aile': 'family',
+    'okul': 'school',
+    'ogretmen': 'teacher',
+    'ogrenci': 'student',
+    'ders': 'lesson',
+    'odev': 'homework',
+    'kitap': 'book',
+    'defter': 'notebook',
+    'silgi': 'eraser',
+    'sinif': 'classroom',
+    'tahta': 'board',
+    'soru': 'question',
+    'cevap': 'answer',
+    'sinav': 'exam',
+    'teneffus': 'break',
+    'okumak': 'to read',
+    'yazmak': 'to write',
+    'dinlemek': 'to listen',
+    'konusmak': 'to speak',
+    'anlamak': 'to understand',
+    'anlamadim': 'I do not understand',
+    'anladim': 'I understand',
+    'pazartesi': 'Monday',
+    'sali': 'Tuesday',
+    'carsamba': 'Wednesday',
+    'persembe': 'Thursday',
+    'cuma': 'Friday',
+    'cumartesi': 'Saturday',
+    'pazar': 'Sunday',
+    'bugun': 'today',
+    'yarin': 'tomorrow',
+    'dun': 'yesterday',
+    'ocak': 'January',
+    'subat': 'February',
+    'mart': 'March',
+    'nisan': 'April',
+    'mayis': 'May',
+    'haziran': 'June',
+    'temmuz': 'July',
+    'agustos': 'August',
+    'eylul': 'September',
+    'ekim': 'October',
+    'kasim': 'November',
+    'aralik': 'December',
+    'ekmek': 'bread',
+    'su': 'water',
+    'sut': 'milk',
+    'elma': 'apple',
+    'muz': 'banana',
+    'cikolata': 'chocolate',
+    'seker': 'candy',
+    'yemek': 'food',
+    'kahvalti': 'breakfast',
+    'ogle yemegi': 'lunch',
+    'aksam yemegi': 'dinner',
+    'aciktim': 'I am hungry',
+    'susadim': 'I am thirsty',
+    'kedi': 'cat',
+    'kopek': 'dog',
+    'kus': 'bird',
+    'balik': 'fish',
+    'at': 'horse',
+    'tavsan': 'rabbit',
+    'ayi': 'bear',
+    'aslan': 'lion',
+    'bas': 'head',
+    'el': 'hand',
+    'ayak': 'foot',
+    'goz': 'eye',
+    'kulak': 'ear',
+    'agiz': 'mouth',
+    'burun': 'nose',
+    'sac': 'hair',
+    'mutlu': 'happy',
+    'uzgun': 'sad',
+    'kizgin': 'angry',
+    'yorgun': 'tired',
+    'iyi': 'good',
+    'kotu': 'bad',
+    'gitmek': 'to go',
+    'gelmek': 'to come',
+    'icmek': 'to drink',
+    'oynamak': 'to play',
+    'kosmak': 'to run',
+    'uyumak': 'to sleep',
+    'gulmek': 'to laugh',
+    'aglamak': 'to cry',
+    'bu ne': 'What is this?',
+    'bu kim': 'Who is this?',
+    'nerede tuvalet': 'Where is the toilet?',
+    'yardima ihtiyacim var': 'I need help',
+    'harika': 'Great!',
+    'tebrikler': 'Congratulations!',
+    'gorusmek uzere': 'See you soon',
+    'saat kac': 'What time is it?',
+    'simdi': 'now',
+    'sonra': 'later',
+    'erken': 'early',
+    'gec': 'late',
+    'gunesli': 'sunny',
+    'yagmurlu': 'rainy',
+    'karli': 'snowy',
+    'ruzgarli': 'windy',
+    'sicak': 'hot',
+    'soguk': 'cold',
+    'ne': 'What?',
+    'kim': 'Who?',
+    'nerede': 'Where?',
+    'ne zaman': 'When?',
+    'neden': 'Why?',
+    'nasil': 'How?',
+    'kac tane': 'How many?',
+}
+
 # 🌍 COĞRAFYA VERİ TABANI
 
 world_countries = {
@@ -709,7 +887,52 @@ historical_events = {
     "istanbulun fethi": "<b>1453 - İstanbul'un Fethi:</b> Fatih Sultan Mehmed liderliğindeki Osmanlı ordusu Bizans'ı yıktı. Orta Çağ kapandı, Yeni Çağ başladı.",
     "cumhuriyetin ilani": "<b>29 Ekim 1923 - Cumhuriyetin İlanı:</b> Gazi Mustafa Kemal Atatürk önderliğinde Türkiye Cumhuriyeti resmen kuruldu. 🇹🇷",
     "malazgirt": "<b>1071 - Malazgirt Meydan Muharebesi:</b> Sultan Alparslan komutasındaki Büyük Selçuklu ordusu, Anadolu'nun kapılarını Türklere açtı.",
-    "buyuk taarruz": "<b>1922 - Büyük Taarruz:</b> Türk Kurtuluş Savaşı'nın son evresi. Anadolu düşman işgalinden tamamen temizlendi."
+    "buyuk taarruz": "<b>1922 - Büyük Taarruz:</b> Türk Kurtuluş Savaşı'nın son evresi. Anadolu düşman işgalinden tamamen temizlendi.",
+
+    # 🇹🇷 Osmanlı Tarihi (EKLENTİ)
+    "osmanli devletinin kurulusu": "<b>1299 - Osmanlı Devleti'nin Kuruluşu:</b> Osman Bey liderliğinde Söğüt ve çevresinde küçük bir beylik olarak kuruldu, üç kıtaya yayılan bir imparatorluğa dönüştü.",
+    "ankara savasi": "<b>1402 - Ankara Savaşı:</b> Osmanlı Padişahı Yıldırım Bayezid, Timur karşısında yenilgiye uğradı; Osmanlı'da Fetret Devri başladı.",
+    "istanbul kusatmasi": "<b>1453 - İstanbul Kuşatması:</b> Fatih Sultan Mehmed'in ordusu 53 gün süren kuşatma sonunda şehri fethetti.",
+    "preveze deniz savasi": "<b>1538 - Preveze Deniz Savaşı:</b> Barbaros Hayreddin Paşa komutasındaki Osmanlı donanması, Haçlı donanmasını büyük bir zaferle mağlup etti.",
+    "kanuni donemi": "<b>1520-1566 - Kanuni Sultan Süleyman Dönemi:</b> Osmanlı Devleti'nin sınırları ve gücü bakımından zirveye ulaştığı dönemdir.",
+    "viyana kusatmasi": "<b>1683 - İkinci Viyana Kuşatması:</b> Osmanlı ordusunun başarısız olduğu bu kuşatma, Osmanlı'nın Avrupa'daki gerileme sürecinin başlangıcı sayılır.",
+    "karlofca antlasmasi": "<b>1699 - Karlofça Antlaşması:</b> Osmanlı Devleti'nin ilk kez büyük toprak kaybettiği antlaşmadır; gerileme döneminin resmi başlangıcı kabul edilir.",
+    "tanzimat fermani": "<b>1839 - Tanzimat Fermanı (Gülhane Hatt-ı Hümayunu):</b> Osmanlı'da hukuk, vergi ve askerlik alanlarında modernleşme reformlarını başlatan fermandır.",
+    "islahat fermani": "<b>1856 - Islahat Fermanı:</b> Gayrimüslim Osmanlı tebaasına dinî ve hukuki eşitlik haklarını genişleten fermandır.",
+    "birinci mesrutiyet": "<b>1876 - Birinci Meşrutiyet:</b> Osmanlı'da ilk kez anayasal monarşiye geçişi sağlayan Kanun-i Esasi'nin ilanıdır.",
+    "ikinci mesrutiyet": "<b>1908 - İkinci Meşrutiyet:</b> Jön Türkler ve İttihat ve Terakki'nin baskısıyla anayasal düzenin yeniden ilan edilmesidir.",
+
+    # 🇹🇷 Kurtuluş Savaşı ve Cumhuriyet Dönemi (EKLENTİ)
+    "canakkale savasi": "<b>1915 - Çanakkale Savaşı:</b> Osmanlı kuvvetlerinin İtilaf Devletleri donanma ve kara ordularına karşı Çanakkale Boğazı'nı savunduğu ve büyük bir zafer kazandığı savaştır.",
+    "samsuna cikis": "<b>19 Mayıs 1919 - Mustafa Kemal'in Samsun'a Çıkışı:</b> Kurtuluş Savaşı'nın manevi başlangıcı kabul edilen tarihtir.",
+    "amasya genelgesi": "<b>1919 - Amasya Genelgesi:</b> Milli mücadelenin gerekçesini ve amacını ortaya koyan, 'milletin istiklalini yine milletin azim ve kararı kurtaracaktır' ilkesini benimseyen genelgedir.",
+    "erzurum kongresi": "<b>1919 - Erzurum Kongresi:</b> Doğu illerinin kurtuluş mücadelesine katılımını sağlayan, milli sınırlar kavramının ilk kez ortaya konduğu kongredir.",
+    "sivas kongresi": "<b>1919 - Sivas Kongresi:</b> Tüm yurttaki direniş cemiyetlerini 'Anadolu ve Rumeli Müdafaa-i Hukuk Cemiyeti' çatısı altında birleştiren ulusal kongredir.",
+    "misak-i milli": "<b>1920 - Misak-ı Millî (Ulusal Ant):</b> Osmanlı Mebusan Meclisi'nin kabul ettiği, Türk milletinin bağımsızlık ve sınırlarına dair temel ilkeleri belirleyen belgedir.",
+    "tbmm acilisi": "<b>23 Nisan 1920 - TBMM'nin Açılışı:</b> Türkiye Büyük Millet Meclisi'nin Ankara'da açılarak egemenliğin millete ait olduğunu ilan ettiği tarihtir.",
+    "sakarya meydan muharebesi": "<b>1921 - Sakarya Meydan Muharebesi:</b> Türk ordusunun Yunan ordusuna karşı kazandığı ve savaşın kaderini değiştiren dönüm noktası niteliğindeki zaferdir.",
+    "dumlupinar": "<b>30 Ağustos 1922 - Başkomutanlık Meydan Muharebesi (Dumlupınar):</b> Türk ordusunun Yunan işgaline son veren kesin zaferi; bu tarih Zafer Bayramı olarak kutlanır.",
+    "lozan antlasmasi": "<b>1923 - Lozan Antlaşması:</b> Türkiye Cumhuriyeti'nin bağımsızlığını ve sınırlarını uluslararası alanda tanıtan, Kurtuluş Savaşı'nı hukuken sonuçlandıran antlaşmadır.",
+    "harf devrimi": "<b>1928 - Harf Devrimi:</b> Arap alfabesinden Latin alfabesine geçişi sağlayan, okuryazarlığı kolaylaştıran köklü bir eğitim reformudur.",
+    "ataturkun olumu": "<b>10 Kasım 1938 - Atatürk'ün Vefatı:</b> Türkiye Cumhuriyeti'nin kurucusu Mustafa Kemal Atatürk, Dolmabahçe Sarayı'nda hayatını kaybetti.",
+    "kibris baris harekati": "<b>1974 - Kıbrıs Barış Harekâtı:</b> Türkiye'nin, adadaki Türklerin güvenliğini sağlamak amacıyla gerçekleştirdiği askeri harekâttır.",
+    "12 eylul darbesi": "<b>1980 - 12 Eylül Darbesi:</b> Türk Silahlı Kuvvetleri'nin yönetime el koyduğu, ülke siyasetinde derin izler bırakan askeri müdahaledir.",
+
+    # 🌍 Dünya Tarihi (EKLENTİ)
+    "roma imparatorlugunun kurulusu": "<b>M.Ö. 27 - Roma İmparatorluğu'nun Kuruluşu:</b> Augustus'un ilk Roma İmparatoru unvanını almasıyla Roma Cumhuriyeti dönemi sona erip İmparatorluk dönemi başladı.",
+    "roma imparatorlugunun yikilisi": "<b>M.S. 476 - Batı Roma İmparatorluğu'nun Yıkılışı:</b> Germen kumandanı Odoaker'in son Roma İmparatoru'nu tahttan indirmesiyle Orta Çağ'ın başlangıcı kabul edilir.",
+    "hacli seferleri": "<b>1096-1291 - Haçlı Seferleri:</b> Avrupalı Hristiyanların Kudüs ve çevresini ele geçirmek amacıyla düzenlediği, yaklaşık iki asır süren dini-askeri seferler dizisidir.",
+    "ronesans": "<b>14-16. yüzyıllar - Rönesans:</b> İtalya'da başlayıp Avrupa'ya yayılan, sanat, bilim ve düşüncede Antik Yunan-Roma değerlerine dönüşü ve yeniden doğuşu ifade eden dönemdir.",
+    "reform hareketi": "<b>1517 - Reform Hareketi:</b> Martin Luther'in Katolik Kilisesi'ne karşı başlattığı, Protestanlığın doğuşuna yol açan dini ve toplumsal hareket.",
+    "amerika kitasinin kesfi": "<b>1492 - Amerika Kıtası'nın Keşfi:</b> Kristof Kolomb'un İspanya adına yaptığı seferle Avrupalıların Amerika kıtasıyla tanıştığı tarihtir.",
+    "fransiz ihtilali": "<b>1789 - Fransız İhtilali:</b> Mutlak monarşiyi yıkarak 'özgürlük, eşitlik, kardeşlik' ilkelerini yayan, modern milliyetçilik ve demokrasi anlayışını derinden etkileyen devrimdir.",
+    "amerikan bagimsizlik savasi": "<b>1775-1783 - Amerikan Bağımsızlık Savaşı:</b> On üç İngiliz kolonisinin Büyük Britanya'ya karşı verdiği ve Amerika Birleşik Devletleri'nin kuruluşuyla sonuçlanan savaştır.",
+    "sanayi devrimi": "<b>18. yüzyıl sonu - Sanayi Devrimi:</b> İngiltere'de başlayan, buhar gücü ve makineleşmeyle üretim biçimini kökten değiştiren, tarım toplumundan sanayi toplumuna geçişi sağlayan süreçtir.",
+    "birinci dunya savasi": "<b>1914-1918 - Birinci Dünya Savaşı:</b> İtilaf ve İttifak Devletleri arasında geçen, milyonlarca insanın hayatını kaybettiği, imparatorlukların yıkılmasına yol açan küresel savaştır.",
+    "ikinci dunya savasi": "<b>1939-1945 - İkinci Dünya Savaşı:</b> Mihver ve Müttefik Devletler arasında geçen, tarihin en yıkıcı ve en çok can kaybına yol açan küresel savaşıdır.",
+    "sovyetler birliginin dagilmasi": "<b>1991 - Sovyetler Birliği'nin Dağılması:</b> SSCB'nin 15 bağımsız devlete bölünmesiyle Soğuk Savaş döneminin sona ermesidir.",
+    "berlin duvarinin yikilisi": "<b>1989 - Berlin Duvarı'nın Yıkılışı:</b> Doğu ve Batı Almanya'yı ayıran duvarın yıkılması, Soğuk Savaş'ın sembolik sonu ve Almanya'nın birleşme sürecinin başlangıcıdır.",
+    "aya ilk inis": "<b>1969 - Ay'a İlk İniş:</b> NASA'nın Apollo 11 görevi ile Neil Armstrong ve Buzz Aldrin, insanlık tarihinde ilk kez Ay yüzeyine ayak bastı."
 }
 
 # 🕋 DİNİ TERİMLER VERİ TABANI
@@ -718,7 +941,15 @@ religious_database = {
     "hicret": "<b>Hicret (622):</b> Hz. Muhammed (s.a.v.) ve Müslümanların Mekke'den Medine'ye göç etmesidir. Hicri takvimin başlangıcıdır.",
     "bedir savasi": "<b>Bedir Savaşı (624):</b> Müslümanlar ile Mekkeli müşrikler arasındaki ilk büyük savaştır. Müslümanlar zafer kazanmıştır.",
     "mekkenin fethi": "<b>Mekke'nin Fethi (630):</b> Hz. Muhammed liderliğindeki İslam ordusu kan dökmeden Mekke'ye girdi.",
-    "siyer": "<b>Siyer:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) hayatını inceleyen bilim dalıdır."
+    "siyer": "<b>Siyer:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) hayatını inceleyen bilim dalıdır.",
+    "uhud savasi": "<b>Uhud Savaşı (625):</b> Müslümanlar ile Mekkeli müşrikler arasında yaşanan, Müslümanların başlangıçta üstün geldiği ama disiplin hatası sonucu ağır kayıp verdiği savaştır.",
+    "hendek savasi": "<b>Hendek Savaşı (627):</b> Medine çevresine kazılan hendeklerle düşman ordusunun şehre girişinin engellendiği savunma savaşıdır.",
+    "veda hutbesi": "<b>Veda Hutbesi (632):</b> Hz. Muhammed'in (s.a.v.) hac sırasında verdiği, insan hakları, eşitlik ve kardeşlik ilkelerini vurgulayan son hutbesidir.",
+    "miraç": "<b>Miraç Kandili:</b> Hz. Muhammed'in (s.a.v.) İsra ve Miraç mucizesiyle Mescid-i Aksa'ya, oradan da göklere yükseldiğine inanılan gecedir.",
+    "kadir gecesi": "<b>Kadir Gecesi:</b> Kur'an-ı Kerim'in indirilmeye başladığına inanılan, Ramazan ayının son on gününde aranan kutsal gecedir.",
+    "ramazan orucu": "<b>Ramazan Orucu:</b> İslam'ın beş şartından biri olan, Ramazan ayı boyunca imsaktan iftara kadar yeme, içme ve diğer bazı davranışlardan uzak durmayı içeren ibadettir.",
+    "islamin sartlari": "<b>İslam'ın Şartları:</b> Kelime-i şehadet, namaz, oruç, zekât ve hacdan oluşan beş temel ibadettir.",
+    "dört halife donemi": "<b>Dört Halife Dönemi (632-661):</b> Hz. Ebubekir, Hz. Ömer, Hz. Osman ve Hz. Ali'nin sırasıyla halifelik yaptığı, İslam'ın hızla yayıldığı dönemdir."
 }
 
 # 🧬 ANATOMİ VE FEN VERİ TABANI
@@ -729,7 +960,16 @@ science_database = {
     "karaciyer": "<b>Anatomi - Karaciğer:</b> Vücudun en büyük iç organıdır ve adeta bir kimya fabrikası gibi çalışır. Safra üretir, toksinleri temizler ve glikoz depolar.",
     "hucre": "<b>Fen Bilgisi - Hücre:</b> Canlıların canlılık özelliği gösteren en küçük yapı taşıdır. Hücre zarı, sitoplazma ve çekirdek olmak üzere üç temel kısımdan oluşur.",
     "fotosentez": "<b>Fen Bilgisi - Fotosentez:</b> Bitkilerin kloroplast organelinde, güneş ışığı yardımıyla su ve karbondioksiti birleştirerek besin (glikoz) ve oksijen üretmesi olayıdır.",
-    "mitokondri": "<b>Fen Bilgisi - Mitokondri:</b> Hücrenin enerji santralidir. Oksijenli solunum yaparak hücre için gerekli olan ATP (enerji) molekülünü üretir."
+    "mitokondri": "<b>Fen Bilgisi - Mitokondri:</b> Hücrenin enerji santralidir. Oksijenli solunum yaparak hücre için gerekli olan ATP (enerji) molekülünü üretir.",
+    "bobrek": "<b>Anatomi - Böbrekler:</b> Kanı süzerek vücuttaki zararlı atık maddeleri idrar yoluyla dışarı atan, sırt bölgesinde çift olarak bulunan organlardır.",
+    "beyin": "<b>Anatomi - Beyin:</b> Sinir sisteminin merkezi olan, düşünme, hafıza, duygular ve vücut hareketlerini kontrol eden organdır. Beyin, beyincik ve omurilik soğanından oluşur.",
+    "mide": "<b>Anatomi - Mide:</b> Sindirim sisteminin bir parçası olan, yemek borusundan gelen besinleri asit ve enzimlerle parçalayan torba şeklindeki organdır.",
+    "dna": "<b>Fen Bilgisi - DNA:</b> Canlıların genetik bilgisini taşıyan, çift sarmal yapıya sahip nükleik asittir. Kalıtsal özelliklerin nesilden nesile aktarılmasını sağlar.",
+    "solunum sistemi": "<b>Fen Bilgisi - Solunum Sistemi:</b> Burun, soluk borusu ve akciğerlerden oluşan, vücuda oksijen alıp karbondioksit veren sistemdir.",
+    "dolasim sistemi": "<b>Fen Bilgisi - Dolaşım Sistemi:</b> Kalp, damarlar ve kandan oluşan, besin ve oksijeni vücuda taşıyan sistemdir.",
+    "sindirim sistemi": "<b>Fen Bilgisi - Sindirim Sistemi:</b> Ağızdan başlayıp bağırsaklara kadar uzanan, besinlerin parçalanıp vücut tarafından kullanılabilir hale getirildiği sistemdir.",
+    "kromozom": "<b>Fen Bilgisi - Kromozom:</b> Hücre çekirdeğinde bulunan, DNA ve proteinden oluşan, genetik bilgiyi taşıyan yapılardır. İnsanda 23 çift kromozom bulunur.",
+    "enzim": "<b>Fen Bilgisi - Enzim:</b> Canlı hücrelerde üretilen, kimyasal tepkimeleri hızlandıran özel protein yapılı biyokatalizörlerdir."
 }
 
 # ⚡ FİZİK VE GEOMETRİ VERİ TABANI
@@ -740,7 +980,14 @@ physics_geometry_database = {
     "ohm kanunu": "<b>Fizik - Ohm Kanunu:</b> Bir elektrik devresinde gerilim (V), akım (I) ve direnç (R) arasındaki ilişkiyi açıklar. Formülü: $V = I \\cdot R$ şeklindedir.",
     "ucgen": "<b>Geometri - Üçgen:</b> Üç doğrunun kesişmesiyle oluşan kapalı şekildir. İç açılarının toplamı her zaman **180°**, dış açılarının toplamı ise **360°**'dir.",
     "kare": "<b>Geometri - Kare:</b> Tüm kenarları birbirine eşit ve tüm iç açıları **90°** olan düzgün bir dörtgendir. Alanı bir kenarının karesidir ($A = a^2$).",
-    "dikdortgen": "<b>Geometri - Dikdörtgen:</b> Karşılıklı kenarları eşit ve paralel, tüm iç açıları **90°** olan dörtgendir. Çevresi: $2(a+b)$, Alanı: $a \\cdot b$ formülüyle bulunur."
+    "dikdortgen": "<b>Geometri - Dikdörtgen:</b> Karşılıklı kenarları eşit ve paralel, tüm iç açıları **90°** olan dörtgendir. Çevresi: $2(a+b)$, Alanı: $a \\cdot b$ formülüyle bulunur.",
+    "newtonun hareket kanunlari": "<b>Fizik - Newton'un Hareket Kanunları:</b> Eylemsizlik (1. kanun), F=ma (2. kanun) ve etki-tepki (3. kanun) ilkelerinden oluşan, klasik mekaniğin temelini oluşturan kanunlardır.",
+    "enerjinin korunumu": "<b>Fizik - Enerjinin Korunumu Kanunu:</b> Enerji yoktan var edilemez, var olan enerji yok edilemez; sadece bir biçimden diğerine dönüşür.",
+    "isik kirilmasi": "<b>Fizik - Işığın Kırılması:</b> Işığın bir ortamdan farklı yoğunluktaki başka bir ortama geçerken yön değiştirmesi olayıdır (örneğin suya batırılan bir çubuğun kırık görünmesi).",
+    "basinç": "<b>Fizik - Basınç:</b> Birim yüzeye etki eden dik kuvvettir. Formülü: $P = F / A$ şeklindedir, birimi Pascal (Pa)'dır.",
+    "daire": "<b>Geometri - Daire:</b> Bir merkez noktadan eşit uzaklıktaki noktaların oluşturduğu düzlemsel şekildir. Alanı $A = \\pi r^2$, çevresi $2\\pi r$ formülüyle bulunur.",
+    "pisagor teoremi": "<b>Geometri - Pisagor Teoremi:</b> Dik üçgende hipotenüsün karesi, diğer iki kenarın karelerinin toplamına eşittir: $a^2 + b^2 = c^2$.",
+    "hacim": "<b>Geometri - Hacim:</b> Bir cismin uzayda kapladığı yerin ölçüsüdür. Küpün hacmi $V = a^3$, dikdörtgenler prizmasının hacmi $V = a \\cdot b \\cdot c$ formülüyle bulunur."
 }
 
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
@@ -813,17 +1060,30 @@ def translate_html_preserving_tags(html_text, target_lang):
         return html_text
 
 
-# 🇷🇺➡️🇹🇷 LOG EKRANI İÇİN OTOMATİK ÇEVİRİ (EKLENTİ)
-# Panelde loglara bakarken Rusça (Kiril alfabeli) bir soru görürsen anlaman
-# için, log satırının sonuna otomatik olarak Türkçe çevirisini ekliyoruz.
+# 🇷🇺➡️🇹🇷 ve 🇬🇧➡️🇹🇷 LOG EKRANI İÇİN OTOMATİK ÇEVİRİ (EKLENTİ)
+# Panelde loglara bakarken Rusça (Kiril alfabeli) veya İngilizce bir soru
+# görürsen anlaman için, log satırının sonuna otomatik olarak Türkçe
+# çevirisini ekliyoruz.
 CYRILLIC_PATTERN = re.compile(r'[\u0400-\u04FF]')
+# İngilizceye özgü yaygın kelimeler — Türkçe'de bulunmayan Latin kökenli
+# kelimelerle eşleşme yaparak "bu İngilizce mi?" tahmini yapıyoruz.
+ENGLISH_HINT_PATTERN = re.compile(
+    r'\b(the|is|are|what|how|why|when|where|which|who|hello|please|thanks|thank you|'
+    r'would|could|can you|do you|does|have you|i am|i\'m|you are|you\'re)\b',
+    re.IGNORECASE
+)
+TURKISH_CHAR_PATTERN = re.compile(r'[çğıöşüÇĞİÖŞÜ]')
 
 
 def add_turkish_translation_to_log_line(log_line):
-    """Log satırında Kiril alfabesi (Rusça) tespit edilirse, satırın sonuna
-    '(TR: ...)' şeklinde Türkçe çevirisini ekler. Türkçe/başka dil ise veya
-    çeviri motoru yoksa/başarısız olursa satırı olduğu gibi bırakır."""
-    if not CYRILLIC_PATTERN.search(log_line):
+    """Log satırında Kiril alfabesi (Rusça) veya yaygın İngilizce kalıpları
+    tespit edilirse, satırın sonuna '(TR: ...)' şeklinde Türkçe çevirisini
+    ekler. Türkçe ise veya çeviri motoru yoksa/başarısız olursa satırı
+    olduğu gibi bırakır."""
+    is_russian = bool(CYRILLIC_PATTERN.search(log_line))
+    is_english = (not is_russian) and bool(ENGLISH_HINT_PATTERN.search(log_line)) and not TURKISH_CHAR_PATTERN.search(log_line)
+
+    if not is_russian and not is_english:
         return log_line
     if not TRANSLATOR_AVAILABLE:
         return log_line
@@ -831,7 +1091,8 @@ def add_turkish_translation_to_log_line(log_line):
         # Log satırı "... -> Soru: <mesaj>" formatında; sadece soru kısmını çeviriyoruz
         if "-> Soru: " in log_line:
             prefix, question_part = log_line.split("-> Soru: ", 1)
-            translated = GoogleTranslator(source='ru', target='tr').translate(question_part)
+            source_lang = 'ru' if is_russian else 'en'
+            translated = GoogleTranslator(source=source_lang, target='tr').translate(question_part)
             return f"{prefix}-> Soru: {question_part} (TR: {translated})"
         return log_line
     except Exception:
@@ -1049,6 +1310,13 @@ def ask():
                 ru_word, translit = RU_DICTIONARY[key]
                 save_log("CEVAPLANDI")
                 return jsonify({"reply": f'<span class="expert-badge badge-sozel">Sözlük (RU)</span><br><b>{phrase_to_translate}</b> → <b>{ru_word}</b><br><span style="opacity:0.7;font-style:italic;">({translit})</span>'})
+        # 🇬🇧 İngilizce için önce internetsiz yerel sözlüğe bakıyoruz (EKLENTİ — Rusça ile aynı mantık)
+        if translate_target == 'en':
+            key = normalize_tr(phrase_to_translate)
+            if key in EN_DICTIONARY:
+                en_word = EN_DICTIONARY[key]
+                save_log("CEVAPLANDI")
+                return jsonify({"reply": f'<span class="expert-badge badge-sozel">Sözlük (EN)</span><br><b>{phrase_to_translate}</b> → <b>{en_word}</b>'})
         # İngilizce veya sözlükte bulunamayan Rusça için (varsa) internet üzerinden çeviri
         if TRANSLATOR_AVAILABLE:
             try:
