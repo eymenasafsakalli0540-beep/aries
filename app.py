@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect
 
 import ast
 import operator
@@ -17,9 +17,146 @@ try:
 except ImportError:
     TRANSLATOR_AVAILABLE = False
 
+# 🔑 GOOGLE İLE GİRİŞ (EKLENTİ) — Authlib kurulu değilse sessizce devre dışı kalır
+try:
+    from authlib.integrations.flask_client import OAuth
+    OAUTH_AVAILABLE = True
+except ImportError:
+    OAUTH_AVAILABLE = False
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
+
+# --------------------------------------------------------------------------
+# 🔑 GOOGLE İLE GİRİŞ + GİRİŞ YAPMAYANLARA MESAJ SINIRI (EKLENTİ)
+# --------------------------------------------------------------------------
+# GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET boşsa (henüz ayarlanmadıysa) Google
+# girişi tamamen devre dışı kalır ve ARIES eskisi gibi sınırsız çalışır —
+# yani bu ekleme, sen Render'da bu değerleri girene kadar hiçbir şeyi bozmaz.
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_LOGIN_ENABLED = OAUTH_AVAILABLE and bool(GOOGLE_CLIENT_ID) and bool(GOOGLE_CLIENT_SECRET)
+
+# 💬 Giriş yapmamış (misafir) kullanıcılar için mesaj sınırı. Bu sayıyı
+# istediğin zaman tek satırda değiştirebilirsin.
+GUEST_MESSAGE_LIMIT = 15
+
+oauth = None
+if GOOGLE_LOGIN_ENABLED:
+    oauth = OAuth(app)
+    oauth.register(
+        name='google',
+        client_id=GOOGLE_CLIENT_ID,
+        client_secret=GOOGLE_CLIENT_SECRET,
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'},
+    )
+
+
+@app.route('/login/google')
+def login_google():
+    if not GOOGLE_LOGIN_ENABLED:
+        return jsonify({"success": False, "error": "Google girişi ayarlanmamış."}), 503
+    redirect_uri = request.url_root.rstrip('/') + '/login/google/callback'
+    return oauth.google.authorize_redirect(redirect_uri)
+
+
+@app.route('/login/google/callback')
+def login_google_callback():
+    if not GOOGLE_LOGIN_ENABLED:
+        return jsonify({"success": False, "error": "Google girişi ayarlanmamış."}), 503
+    token = oauth.google.authorize_access_token()
+    user_info = token.get('userinfo', {})
+    # ✅ Giriş yapan kullanıcıyı session'a kaydet — artık mesaj sınırı yok
+    session['google_user'] = {
+        "email": user_info.get("email", ""),
+        "name": user_info.get("name", ""),
+        "picture": user_info.get("picture", ""),
+    }
+    session['guest_message_count'] = 0  # giriş yapınca sayaç sıfırlanır
+    return redirect(request.url_root.rstrip('/') + '/')
+
+
+@app.route('/logout/google')
+def logout_google():
+    session.pop('google_user', None)
+    return redirect(request.url_root.rstrip('/') + '/')
+
+
+@app.route('/api/auth-status')
+def auth_status():
+    """Frontend'in giriş durumunu ve kalan mesaj hakkını sorgulaması için (EKLENTİ)."""
+    user = session.get('google_user')
+    return jsonify({
+        "logged_in": bool(user),
+        "user": user,
+        "google_login_enabled": GOOGLE_LOGIN_ENABLED,
+        "guest_message_count": session.get('guest_message_count', 0),
+        "guest_message_limit": GUEST_MESSAGE_LIMIT,
+    })
+
+# --------------------------------------------------------------------------
+# 🖥️ BİLGİSAYAR AJANI ALTYAPISI (EKLENTİ) — SINIRLI VE KONTROLLÜ
+# --------------------------------------------------------------------------
+# Aries sohbette "chrome'u kapat" gibi bir ifade yakalarsa, bunu rastgele bir
+# komut olarak ÇALIŞTIRMAZ — sadece önceden izin verilmiş (whitelist) bir
+# uygulama adıysa, bir komut kuyruğuna yazar. Bilgisayarındaki ayrı bir
+# `agent.py` programı bu kuyruğu periyodik olarak kontrol eder (polling) ve
+# KENDİ whitelist'inde de varsa uygulamayı kapatır. Sunucu asla bilgisayarına
+# doğrudan bağlanmaz; bağlantıyı her zaman senin bilgisayarındaki agent.py
+# başlatır. Bu, güvenlik açısından önemli bir tercihtir.
+#
+# AGENT_SECRET, panel şifresinden (4235) FARKLI ve uzun/rastgele olmalı —
+# çünkü bu anahtarı bilen biri bilgisayarına komut gönderebilir. Render'da
+# ortam değişkeni olarak ayarla: AGENT_SECRET=<uzun-rastgele-bir-anahtar>
+AGENT_SECRET = os.environ.get("AGENT_SECRET", "")
+
+# Sunucu tarafı whitelist: hangi uygulama isimlerinin/eş anlamlılarının hangi
+# process adına karşılık geldiği. Buradaki liste dışında HİÇBİR şey kabul edilmez.
+APP_CLOSE_WHITELIST = {
+    "chrome": "chrome.exe",
+    "google chrome": "chrome.exe",
+    "krom": "chrome.exe",
+    "firefox": "firefox.exe",
+    "edge": "msedge.exe",
+    "notepad": "notepad.exe",
+    "not defteri": "notepad.exe",
+    "hesap makinesi": "CalculatorApp.exe",
+    "spotify": "Spotify.exe",
+    "discord": "Discord.exe",
+    "word": "WINWORD.EXE",
+    "excel": "EXCEL.EXE",
+}
+
+# Bekleyen ajan komutları (basit in-memory kuyruk). Ajan bunu çekip
+# uyguladıktan sonra kuyruk temizlenir.
+pending_agent_commands = []
+
+# Bir mesajda "<uygulama> kapat/kapatir misin/kapatabilir misin" kalıbını yakalar
+APP_CLOSE_PATTERN = re.compile(
+    r'\b([a-zçğıöşü ]{2,20}?)\s*(?:yi|yı|i|ı|u|ü)?\s*kapat',
+    re.IGNORECASE
+)
+
+
+def try_queue_app_close_command(norm_msg, raw_message):
+    """Mesajda 'X'i kapat' kalıbı varsa ve X whitelist'teyse, komutu kuyruğa
+    ekler ve kullanıcıya gösterilecek onay mesajını döner. Eşleşme yoksa
+    veya uygulama whitelist'te değilse None döner (ARIES normal akışına devam eder)."""
+    match = APP_CLOSE_PATTERN.search(norm_msg)
+    if not match:
+        return None
+    app_name_raw = match.group(1).strip()
+    if app_name_raw not in APP_CLOSE_WHITELIST:
+        return None
+    process_name = APP_CLOSE_WHITELIST[app_name_raw]
+    pending_agent_commands.append({
+        "action": "close_app",
+        "target": process_name,
+        "issued_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    })
+    return f"🖥️ Tamam, <b>{app_name_raw}</b> kapatılıyor... (bilgisayarındaki ajan programı bir sonraki kontrolünde bunu uygulayacak)"
 
 # --------------------------------------------------------------------------
 # 🛠️ BAKIM MODU (EKLENTİ — mevcut koda dokunmadan eklendi)
@@ -143,11 +280,15 @@ AI_MODEL_ANTHROPIC = "claude-3-5-haiku-20241022"
 AI_MODEL_GEMINI = "gemini-2.0-flash"
 
 
-def ask_ai_fallback(user_text, buddy_mode=False):
+def ask_ai_fallback(user_text, buddy_mode=False, history=None):
     """Kural tabanlı sistem cevap bulamadığında çağrılır. AI_API_KEY boşsa None döner
-    ve ARIES normal 'bulamadım' cevabını verir. Anahtar varsa gerçek bir modele sorar."""
+    ve ARIES normal 'bulamadım' cevabını verir. Anahtar varsa gerçek bir modele sorar.
+    'history' verilirse (önceki mesajlar), AI bu bağlamı da göz önünde bulundurur —
+    böylece kullanıcı önceki soruya atıfta bulunsa bile (örn. 'peki ya bu?') anlar."""
     if not AI_API_KEY:
         return None
+
+    history = history or []  # 🧠 KONUŞMA HAFIZASI (EKLENTİ) — [{"role": "user"/"assistant", "content": "..."}]
 
     system_prompt = (
         "Sen ARIES AI adında Türkçe konuşan, bilgili ve güvenilir bir yapay zeka asistanısın. "
@@ -156,19 +297,26 @@ def ask_ai_fallback(user_text, buddy_mode=False):
         "Tarihle ilgili sorularda mümkünse tarih, önemli kişiler, sebep-sonuç ilişkisi ve tarihsel "
         "önemini de kısaca belirt. Cevapların kısa ama bilgi yoğunluğu yüksek olsun; gereksiz "
         "uzatmadan, doğrudan ve net konuş. Emin olmadığın veya kesin bilmediğin bir bilgiyi "
-        "kesinmiş gibi uydurma; belirsizse bunu açıkça belirt. "
+        "kesinmiş gibi uydurma; belirsizse bunu açıkça belirt. Önceki mesajlar sağlanmışsa, "
+        "konuşmanın bağlamını dikkate al ve tutarlı cevap ver. "
         + ("Samimi ve arkadaşça (kanka diliyle) konuş." if buddy_mode else "Kibar ve profesyonel bir dille konuş.")
     )
 
     try:
         if AI_API_PROVIDER == "gemini":
+            # 🧠 Gemini için geçmiş mesajları 'user'/'model' rolleriyle sıraya ekle (EKLENTİ)
+            gemini_contents = [
+                {"role": ("model" if h.get("role") == "assistant" else "user"), "parts": [{"text": h.get("content", "")}]}
+                for h in history
+            ]
+            gemini_contents.append({"role": "user", "parts": [{"text": user_text}]})
             resp = requests.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{AI_MODEL_GEMINI}:generateContent",
                 headers={"Content-Type": "application/json"},
                 params={"key": AI_API_KEY},
                 json={
                     "systemInstruction": {"parts": [{"text": system_prompt}]},
-                    "contents": [{"role": "user", "parts": [{"text": user_text}]}],
+                    "contents": gemini_contents,
                     "generationConfig": {"maxOutputTokens": 500},
                 },
                 timeout=15,
@@ -179,6 +327,8 @@ def ask_ai_fallback(user_text, buddy_mode=False):
             return "".join(p.get("text", "") for p in parts).strip() or None
 
         elif AI_API_PROVIDER == "anthropic":
+            # 🧠 Anthropic için geçmiş mesajları doğrudan messages listesine ekle (EKLENTİ)
+            anthropic_messages = list(history) + [{"role": "user", "content": user_text}]
             resp = requests.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={
@@ -190,7 +340,7 @@ def ask_ai_fallback(user_text, buddy_mode=False):
                     "model": AI_MODEL_ANTHROPIC,
                     "max_tokens": 500,
                     "system": system_prompt,
-                    "messages": [{"role": "user", "content": user_text}],
+                    "messages": anthropic_messages,
                 },
                 timeout=15,
             )
@@ -199,6 +349,8 @@ def ask_ai_fallback(user_text, buddy_mode=False):
             return "".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text").strip() or None
 
         else:  # openai
+            # 🧠 OpenAI için geçmiş mesajları system'dan sonra, mevcut sorudan önce ekle (EKLENTİ)
+            openai_messages = [{"role": "system", "content": system_prompt}] + list(history) + [{"role": "user", "content": user_text}]
             resp = requests.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={
@@ -207,10 +359,7 @@ def ask_ai_fallback(user_text, buddy_mode=False):
                 },
                 json={
                     "model": AI_MODEL_OPENAI,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_text},
-                    ],
+                    "messages": openai_messages,
                     "max_tokens": 500,
                 },
                 timeout=15,
@@ -991,10 +1140,10 @@ physics_geometry_database = {
 }
 
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
-GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi"]
+GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi", "hello", "selaminaleykum", "aleykumselam", "gunaydin", "iyi gunler", "iyi aksamlar"]
 
 # 🙏 TEŞEKKÜR / NEZAKET KELİMELERİ (fuzzy eşleşme için)
-THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sagolun", "minnettarim", "ellerinesaglik"]
+THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sagolun", "minnettarim", "ellerinesaglik", "harikasin", "cok iyisin", "super", "mukemmel"]
 
 # 😊 "RİCA EDERİM" TÜRÜ KARŞILIK KALIPLARI (kullanıcı bota teşekkür ettiğinde bot cevap veriyor;
 # ama kullanıcı "rica ederim" derse bota bir onay/nezaket cevabı gerekiyor)
@@ -1153,10 +1302,20 @@ _ALLOWED_OPERATORS = {
     ast.Div: operator.truediv,
     ast.USub: operator.neg,
     ast.UAdd: operator.pos,
+    ast.Pow: operator.pow,   # 🧮 Üs alma desteği (EKLENTİ, örn. 2**3)
 }
 
-MAX_EXPRESSION_LENGTH = 60          # aşırı uzun ifadeleri reddet
+# 🧮 Güvenli fonksiyon çağrıları — sadece bu isimlere izin veriliyor (EKLENTİ)
+_ALLOWED_FUNCTIONS = {
+    "sqrt": math.sqrt,
+    "sin": math.sin,
+    "cos": math.cos,
+    "tan": math.tan,
+}
+
+MAX_EXPRESSION_LENGTH = 80          # aşırı uzun ifadeleri reddet (üs/kök için biraz artırıldı)
 MAX_NUMBER_LENGTH = 15               # tek bir sayı en fazla 15 haneli olabilir
+MAX_POWER_EXPONENT = 20              # aşırı büyük üs işlemlerini (DoS riski) engelle
 
 
 def _safe_eval_node(node):
@@ -1171,9 +1330,21 @@ def _safe_eval_node(node):
     if isinstance(node, ast.BinOp) and type(node.op) in _ALLOWED_OPERATORS:
         left = _safe_eval_node(node.left)
         right = _safe_eval_node(node.right)
+        if isinstance(node.op, ast.Pow) and (abs(right) > MAX_POWER_EXPONENT):
+            raise ValueError("Üs değeri çok büyük.")
         return _ALLOWED_OPERATORS[type(node.op)](left, right)
     if isinstance(node, ast.UnaryOp) and type(node.op) in _ALLOWED_OPERATORS:
         return _ALLOWED_OPERATORS[type(node.op)](_safe_eval_node(node.operand))
+    # 🧮 sqrt(), sin(), cos(), tan() gibi güvenli fonksiyon çağrılarına izin ver (EKLENTİ)
+    if isinstance(node, ast.Call):
+        func_name = getattr(node.func, "id", None)
+        if func_name in _ALLOWED_FUNCTIONS and len(node.args) == 1 and not node.keywords:
+            arg_value = _safe_eval_node(node.args[0])
+            try:
+                return _ALLOWED_FUNCTIONS[func_name](arg_value)
+            except ValueError:
+                raise ValueError("Fonksiyon için geçersiz değer (örn. negatif sayının karekökü).")
+        raise ValueError("Desteklenmeyen fonksiyon.")
     raise ValueError("Desteklenmeyen işlem.")
 
 
@@ -1245,6 +1416,29 @@ def get_logs():
     return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı."]}), 200, response_headers
 
 
+# --------------------------------------------------------------------------
+# 🖥️ /api/agent-poll — Bilgisayarındaki agent.py bu endpoint'i periyodik
+# olarak kontrol eder; bekleyen komut varsa alır ve kuyruk temizlenir.
+# AGENT_SECRET boşsa (ayarlanmamışsa) bu endpoint tamamen kapalıdır (403).
+# --------------------------------------------------------------------------
+@app.route('/api/agent-poll', methods=['POST', 'OPTIONS'])
+def agent_poll():
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200
+
+    if not AGENT_SECRET:
+        return jsonify({"success": False, "error": "Ajan devre dışı (AGENT_SECRET ayarlanmamış)."}), 403
+
+    data = request.json or {}
+    if data.get("secret") != AGENT_SECRET:
+        return jsonify({"success": False, "error": "Yetkisiz erişim."}), 403
+
+    global pending_agent_commands
+    commands = pending_agent_commands
+    pending_agent_commands = []
+    return jsonify({"success": True, "commands": commands})
+
+
 @app.route('/ask', methods=['POST', 'OPTIONS'])
 def ask():
     # 🌐 CORS DESTEĞİ (EKLENTİ) — panel farklı bir adresten (origin) barındırılıyorsa
@@ -1271,6 +1465,18 @@ def ask():
     if MAINTENANCE_MODE and not is_admin_test:
         return jsonify({"reply": MAINTENANCE_MESSAGE, "maintenance": True}), 200, cors_headers
 
+    # 💬 GİRİŞ YAPMAYANLARA MESAJ SINIRI (EKLENTİ) — admin test bypass ve
+    # Google ile giriş yapmış kullanıcılar bu sınıra tabi değildir.
+    if GOOGLE_LOGIN_ENABLED and not is_admin_test and not session.get('google_user'):
+        current_count = session.get('guest_message_count', 0)
+        if current_count >= GUEST_MESSAGE_LIMIT:
+            return jsonify({
+                "reply": f"💬 Misafir kullanıcılar için {GUEST_MESSAGE_LIMIT} mesajlık ücretsiz sınıra ulaştın. "
+                         f"Devam etmek için lütfen Google ile giriş yap.",
+                "limit_reached": True
+            }), 200, cors_headers
+        session['guest_message_count'] = current_count + 1
+
     user_message = request.json.get("message", "").lower().strip()
     raw_message = request.json.get("message", "").strip()
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -1290,6 +1496,21 @@ def ask():
         "mrhb": "merhaba", "knk": "kanka", "kgo": "coğrafya", "mat": "matematik",
         "fzk": "fizik", "gmt": "geometri", "antm": "anatomi", "akciger": "akciyer",
         "marhaba": "merhaba", "mehraba": "merhaba", "selm": "selam",
+        # 🧠 Daha fazla yazım hatası / kısaltma toleransı (EKLENTİ)
+        "slam": "selam", "selamm": "selam", "mrhba": "merhaba", "merhabaa": "merhaba",
+        "nbr2": "naber", "naberr": "naber", "naaber": "naber", "napiyorsun": "naber",
+        "n'aber": "naber", "n'apiyorsun": "naber",
+        "tsk": "tesekkurler", "tskler": "tesekkurler", "sagolun": "tesekkurler",
+        "eyv": "eyvallah", "eyvl": "eyvallah",
+        "cvp": "cevap", "sorug": "soru", "sory": "soru",
+        "trh": "tarih", "trih": "tarih", "cogr": "coğrafya", "cografya": "coğrafya",
+        "fen": "fen bilgisi", "fenn": "fen bilgisi",
+        "din": "dini bilgi", "dinn": "dini bilgi",
+        "kanks": "kanka", "kanka2": "kanka", "abi": "kanka", "abicim": "kanka",
+        "hocam": "merhaba", "reis": "kanka",
+        "napan": "naber", "naapiyon": "naber", "ne haber": "naber",
+        "gunaydinn": "gunaydin", "gunaydn": "gunaydin",
+        "iyi aksamlarr": "iyi aksamlar", "iyi gecelerr": "iyi geceler",
     }
     words = norm_msg.split()
     fixed_words = [typo_rules.get(w, w) for w in words]
@@ -1299,6 +1520,13 @@ def ask():
     # Kanka modu SADECE kullanıcı gerçekten "kanka" derse aktif olur.
     # ("naber" artık kanka modunu tetiklemiyor; varsayılan ton ciddi/nazik kalır.)
     is_buddy_mode = "kanka" in norm_msg
+
+    # 🖥️ Uygulama Kapatma Komutu Kontrolü (EKLENTİ) — sadece whitelist'teki
+    # uygulamalar için, rastgele komut çalıştırma YOK.
+    agent_reply = try_queue_app_close_command(norm_msg, raw_message)
+    if agent_reply:
+        save_log("CEVAPLANDI (AGENT)")
+        return build_reply(agent_reply)
 
     # 🔁 Doğrudan Çeviri Komutu ("kedi'yi ingilizceye çevir", "translate cat to russian")
     phrase_to_translate, translate_target = parse_translation_command(raw_message)
@@ -1374,14 +1602,34 @@ def ask():
         save_log("CEVAPLANDI")
         return build_reply("Ne demek, her zaman yardımcı olmaktan memnuniyet duyarım. 😊")
 
-    # 🔢 Matematik Motoru (güvenli hesaplayıcı ile)
-    math_message = user_message.replace(",", ".")
+    # 🔢 Matematik Motoru (güvenli hesaplayıcı ile — üs, kök, yüzde, trigonometri destekli EKLENTİ)
+    # NOT: parantez/nokta gibi karakterler yukarıda (norm_msg için) temizlendiğinden,
+    # matematik ifadesini orijinal mesajdan (raw_message) alıyoruz ki parantezli
+    # fonksiyon çağrıları (örn. sqrt(16)) ve ondalıklı sayılar (3.14) bozulmasın.
+    math_source = re.sub(r'[?!;"\'’]', '', raw_message.lower()).replace(",", ".")
+
+    MATH_FUNCTION_ALIASES = {
+        "karekök": "sqrt", "karekok": "sqrt", "kök": "sqrt", "kok": "sqrt",
+        "sinüs": "sin", "sinus": "sin",
+        "kosinüs": "cos", "kosinus": "cos",
+        "tanjant": "tan",
+    }
+    math_prepped = math_source
+    for tr_name, std_name in MATH_FUNCTION_ALIASES.items():
+        math_prepped = math_prepped.replace(tr_name, std_name)
+    math_prepped = re.sub(r'(\d+(?:\.\d+)?)\s*%', r'(\1/100)', math_prepped)  # "50%" -> "(50/100)"
+    math_prepped = math_prepped.replace('^', '**')  # "2^3" -> "2**3"
+
     math_chars = set("0123456789+-*/(). ")
-    if any(char in math_message for char in ['+', '-', '*', '/']) and set(math_message).issubset(math_chars):
+    is_basic_math = any(char in math_source for char in ['+', '-', '*', '/']) and set(math_source).issubset(math_chars)
+    is_function_math = bool(re.fullmatch(r'\s*(sqrt|sin|cos|tan)\([^()]*\)\s*', math_prepped))
+    has_power_or_percent = ('^' in math_source) or ('%' in math_source)
+
+    if is_basic_math or is_function_math or has_power_or_percent:
         try:
-            result = safe_math_eval(math_message)
+            result = safe_math_eval(math_prepped)
             save_log("CEVAPLANDI")
-            return build_reply(f'<span class="expert-badge badge-sayisal">Matematiksel Analiz</span><br><div class="formula-box">{user_message} = {result}</div>')
+            return build_reply(f'<span class="expert-badge badge-sayisal">Matematiksel Analiz</span><br><div class="formula-box">{raw_message} = {result}</div>')
         except Exception:
             save_log("HATA")
             if is_buddy_mode:
@@ -1428,9 +1676,14 @@ def ask():
 
     # 🤖 Kural tabanlı sistemde eşleşme bulunamadı — AI_API_KEY girilmişse
     # gerçek bir yapay zekaya sorup daha akıllı/geniş kapsamlı cevap üretmeyi dene.
-    ai_reply = ask_ai_fallback(raw_message, buddy_mode=is_buddy_mode)
+    # 🧠 KONUŞMA HAFIZASI (EKLENTİ) — session'da tutulan son mesajlar AI'ya bağlam olarak veriliyor
+    conversation_history = session.get('chat_history', [])
+    ai_reply = ask_ai_fallback(raw_message, buddy_mode=is_buddy_mode, history=conversation_history)
     if ai_reply:
         save_log("CEVAPLANDI (AI)")
+        conversation_history.append({"role": "user", "content": raw_message})
+        conversation_history.append({"role": "assistant", "content": ai_reply})
+        session['chat_history'] = conversation_history[-10:]  # bellek şişmesin diye son 10 mesajla sınırla
         return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#8e44ad;">Genişletilmiş Zeka</span><br>{ai_reply}')
 
     save_log("CEVAPLANAMADI")
