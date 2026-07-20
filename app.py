@@ -273,7 +273,7 @@ def add_cors_headers(response):
 #   1) Aşağıya kendi API anahtarınızı yazın (ya da ortam değişkeni olarak verin).
 #   2) AI_API_PROVIDER'ı "openai", "anthropic" veya "gemini" olarak seçin.
 #   3) Sunucuyu başlatın — artık ARIES bilmediği soruları da cevaplayabilir.
-AI_API_KEY = os.environ.get("AQ.Ab8RN6L66M_i2NZ6-G_99hapOmSm8x_U5o00Y2Jv6fbTyW8aRw", "")        # <-- BURAYA KENDİ API ANAHTARINIZI GİRİN
+AI_API_KEY = os.environ.get("AI_API_KEY", "")        # <-- Render'da "AI_API_KEY" adında ortam değişkeni olarak girin
 AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", "gemini")  # "openai", "anthropic" veya "gemini"
 AI_MODEL_OPENAI = "gpt-4o-mini"
 AI_MODEL_ANTHROPIC = "claude-3-5-haiku-20241022"
@@ -1152,6 +1152,12 @@ YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "on
 # 🏗️ "KİM YAPTI" SORU KALIPLARI (boşluksuz/bitişik hâliyle de kontrol edilecek)
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
+# 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
+INSULT_WORDS = ["mal", "aptal", "salak", "gerizekali", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek"]
+
+# 😤 "DALGA MI GEÇİYORSUN" TÜRÜ SİNİRLİ İFADELER (EKLENTİ)
+FRUSTRATION_PHRASES = ["dalga mi geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mi buluyorsun"]
+
 # 🗣️ "DO YOU SPEAK ENGLISH/RUSSIAN" TÜRÜ DİL SORULARI
 LANGUAGE_PHRASES = {
     "english": ["do you speak english", "can you speak english", "speak english", "ingilizce biliyor musun", "ingilizce konusuyor musun"],
@@ -1602,11 +1608,34 @@ def ask():
         save_log("CEVAPLANDI")
         return build_reply("Ne demek, her zaman yardımcı olmaktan memnuniyet duyarım. 😊")
 
+    # 😤 Argo/hakaret veya "dalga mı geçiyorsun" tarzı sinirli ifadeler (EKLENTİ)
+    if any(fuzzy_word_in(w, INSULT_WORDS, cutoff=0.85) for w in fixed_words):
+        save_log("CEVAPLANDI (SAKINLESTIRME)")
+        if is_buddy_mode:
+            return build_reply("Sakin ol kanka 😅 Küfür etmene gerek yok, ne sormak istiyorsan yardımcı olurum.")
+        return build_reply("Lütfen kibar bir dil kullanalım 🙂 Size nasıl yardımcı olabilirim?")
+
+    if any(p in norm_msg for p in FRUSTRATION_PHRASES):
+        save_log("CEVAPLANDI (SAKINLESTIRME)")
+        return build_reply("Hayır, dalga geçmiyorum — bazen soruyu tam anlayamayabiliyorum. Sorunu biraz daha farklı bir şekilde yazar mısın?")
+
     # 🔢 Matematik Motoru (güvenli hesaplayıcı ile — üs, kök, yüzde, trigonometri destekli EKLENTİ)
     # NOT: parantez/nokta gibi karakterler yukarıda (norm_msg için) temizlendiğinden,
     # matematik ifadesini orijinal mesajdan (raw_message) alıyoruz ki parantezli
     # fonksiyon çağrıları (örn. sqrt(16)) ve ondalıklı sayılar (3.14) bozulmasın.
     math_source = re.sub(r'[?!;"\'’]', '', raw_message.lower()).replace(",", ".")
+
+    # 🔢 Sözel operatörleri sembole çevir (EKLENTİ) — "31 kere 31", "31x31" gibi ifadeleri yakalar
+    MATH_WORD_OPERATORS = [
+        (r'\bkere\b', '*'), (r'\bçarpı\b', '*'), (r'\bcarpi\b', '*'), (r'\bx\b', '*'),
+        (r'\bbölü\b', '/'), (r'\bbolu\b', '/'),
+        (r'\bartı\b', '+'), (r'\barti\b', '+'), (r'\btopla\b', '+'),
+        (r'\beksi\b', '-'), (r'\bçıkar\b', '-'), (r'\bcikar\b', '-'),
+    ]
+    for _pattern, _symbol in MATH_WORD_OPERATORS:
+        math_source = re.sub(_pattern, _symbol, math_source, flags=re.IGNORECASE)
+    math_source = re.sub(r'(?<=\d)x(?=\d)', '*', math_source, flags=re.IGNORECASE)
+    math_source = re.sub(r'kaç\s*eder|kaçeder|eşittir|kaçtır', '', math_source, flags=re.IGNORECASE).strip()
 
     MATH_FUNCTION_ALIASES = {
         "karekök": "sqrt", "karekok": "sqrt", "kök": "sqrt", "kok": "sqrt",
