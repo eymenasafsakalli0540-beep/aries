@@ -7,7 +7,7 @@ import requests
 import os
 import re
 from difflib import get_close_matches
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 🌐 ÇEVİRİ MOTORU (dil modu ve /çevir komutu için)
 # Sunucuda kurulu değilse çeviri özellikleri sessizce devre dışı kalır.
@@ -27,6 +27,18 @@ except ImportError:
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
+
+# 🕒 KALICI OTURUM (EKLENTİ) — varsayılanda Flask oturumu tarayıcı kapanınca
+# siliniyordu, bu yüzden Google ile giriş yapan kullanıcılar her seferinde
+# tekrar giriş yapmak zorunda kalıyordu. Artık oturumlar 30 gün boyunca
+# tarayıcıda kalıcı olarak saklanıyor; kullanıcı ne zaman geri gelse (kendi
+# çıkış yapmadığı sürece) hâlâ giriş yapmış olarak karşılanıyor.
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+
+@app.before_request
+def _make_session_permanent():
+    session.permanent = True
 
 # --------------------------------------------------------------------------
 # 🔑 GOOGLE İLE GİRİŞ + GİRİŞ YAPMAYANLARA MESAJ SINIRI (EKLENTİ)
@@ -273,11 +285,28 @@ def add_cors_headers(response):
 #   1) Aşağıya kendi API anahtarınızı yazın (ya da ortam değişkeni olarak verin).
 #   2) AI_API_PROVIDER'ı "openai", "anthropic" veya "gemini" olarak seçin.
 #   3) Sunucuyu başlatın — artık ARIES bilmediği soruları da cevaplayabilir.
-AI_API_KEY = os.environ.get("AI_API_KEY", "")        # <-- Render'da "AI_API_KEY" adında ortam değişkeni olarak girin
-AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", "gemini")  # "openai", "anthropic" veya "gemini"
+AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()  # <-- Render'da "AI_API_KEY" adında ortam değişkeni olarak girin
+AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", "gemini").strip().lower()  # "openai", "anthropic" veya "gemini"
 AI_MODEL_OPENAI = "gpt-4o-mini"
 AI_MODEL_ANTHROPIC = "claude-3-5-haiku-20241022"
-AI_MODEL_GEMINI = "gemini-2.0-flash"
+# ⚠️ ÖNEMLİ DÜZELTME: "gemini-2.0-flash" Google tarafından 1 Haziran 2026'da
+# tamamen kapatıldı (deprecated/shutdown) — bu yüzden AI_API_KEY doğru olsa
+# bile her istek sessizce 404 alıp boş dönüyordu. "gemini-2.5-flash" ile
+# değiştirildi (güncel, kararlı/GA model).
+AI_MODEL_GEMINI = "gemini-2.5-flash"
+
+# 🧠 AKILLI SAĞLAYICI TESPİTİ (EKLENTİ) — bazen AI_API_PROVIDER yanlış/eksik
+# ayarlanıyor (örn. OpenAI anahtarı girilip provider "gemini" bırakılıyor).
+# Anahtarın biçimine bakarak hangi sağlayıcıya ait olduğunu otomatik anlarız;
+# bu şekilde yanlış eşleşmeden kaynaklanan "anahtar çalışmıyor" sorunları
+# kendiliğinden düzelir.
+if AI_API_KEY:
+    if AI_API_KEY.startswith("sk-ant-"):
+        AI_API_PROVIDER = "anthropic"
+    elif AI_API_KEY.startswith("sk-"):
+        AI_API_PROVIDER = "openai"
+    elif AI_API_KEY.startswith("AIza"):
+        AI_API_PROVIDER = "gemini"
 
 
 def ask_ai_fallback(user_text, buddy_mode=False, history=None):
@@ -290,15 +319,23 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
 
     history = history or []  # 🧠 KONUŞMA HAFIZASI (EKLENTİ) — [{"role": "user"/"assistant", "content": "..."}]
 
+    # 🧠 GELİŞMİŞ SİSTEM PROMPTU (EKLENTİ) — ARIES artık dar bir konu listesiyle
+    # sınırlı değil; herhangi bir konuda (genel kültür, teknoloji, kodlama,
+    # yazım/analiz, tavsiye, çeviri, özetleme vb.) düşünerek, adım adım
+    # akıl yürüterek ve dürüstçe cevap verebilen genel amaçlı bir asistan gibi davranır.
     system_prompt = (
-        "Sen ARIES AI adında Türkçe konuşan, bilgili ve güvenilir bir yapay zeka asistanısın. "
-        "Özellikle tarih (Osmanlı, Türk Kurtuluş Savaşı, dünya tarihi), coğrafya, fen bilimleri, "
-        "fizik ve matematik konularında derinlemesine ve doğru bilgi ver. "
-        "Tarihle ilgili sorularda mümkünse tarih, önemli kişiler, sebep-sonuç ilişkisi ve tarihsel "
-        "önemini de kısaca belirt. Cevapların kısa ama bilgi yoğunluğu yüksek olsun; gereksiz "
-        "uzatmadan, doğrudan ve net konuş. Emin olmadığın veya kesin bilmediğin bir bilgiyi "
-        "kesinmiş gibi uydurma; belirsizse bunu açıkça belirt. Önceki mesajlar sağlanmışsa, "
-        "konuşmanın bağlamını dikkate al ve tutarlı cevap ver. "
+        "Sen ARIES AI adında, Türkçe konuşan, çok yönlü ve son derece yetkin bir yapay zeka "
+        "asistanısın. Matematik, tarih (Osmanlı, Türk Kurtuluş Savaşı, dünya tarihi), coğrafya, "
+        "fen bilimleri, fizik gibi konularda derinlemesine bilgin var; ama bunlarla sınırlı "
+        "değilsin — teknoloji, kodlama, yazım/düzenleme, tavsiye, özetleme, analiz, günlük "
+        "hayat soruları dahil HER konuda elinden gelenin en iyisini yaparak yardımcı olursun. "
+        "Karmaşık bir soru geldiğinde önce sessizce adım adım düşün, sonra net ve düzenli bir "
+        "cevap ver (gerekiyorsa madde işaretleri veya kısa paragraflarla). Cevapların gereksiz "
+        "yere uzun olmasın; kısa ama bilgi yoğunluğu yüksek, doğrudan ve anlaşılır olsun. "
+        "Emin olmadığın veya kesin bilmediğin bir bilgiyi kesinmiş gibi uydurma; belirsizse "
+        "bunu açıkça belirt. Önceki mesajlar sağlanmışsa konuşmanın bağlamını dikkate al ve "
+        "tutarlı, önceki cevaplarınla çelişmeyen bir cevap ver. Kullanıcıya karşı her zaman "
+        "saygılı, sabırlı ve yardımsever ol. "
         + ("Samimi ve arkadaşça (kanka diliyle) konuş." if buddy_mode else "Kibar ve profesyonel bir dille konuş.")
     )
 
@@ -317,7 +354,7 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
                 json={
                     "systemInstruction": {"parts": [{"text": system_prompt}]},
                     "contents": gemini_contents,
-                    "generationConfig": {"maxOutputTokens": 500},
+                    "generationConfig": {"maxOutputTokens": 800},
                 },
                 timeout=15,
             )
@@ -338,7 +375,7 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
                 },
                 json={
                     "model": AI_MODEL_ANTHROPIC,
-                    "max_tokens": 500,
+                    "max_tokens": 800,
                     "system": system_prompt,
                     "messages": anthropic_messages,
                 },
@@ -360,7 +397,7 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
                 json={
                     "model": AI_MODEL_OPENAI,
                     "messages": openai_messages,
-                    "max_tokens": 500,
+                    "max_tokens": 800,
                 },
                 timeout=15,
             )
@@ -368,8 +405,21 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
             data = resp.json()
             return data["choices"][0]["message"]["content"].strip() or None
 
-    except Exception:
-        # API hatası/timeout olursa sessizce None dön, ARIES normal cevabına düşer.
+    except Exception as e:
+        # 🩺 HATA LOGLAMA (EKLENTİ) — eskiden hata tamamen sessizce yutuluyordu,
+        # bu yüzden "API anahtarı çalışmıyor" gibi sorunların NEDENİNİ görmek
+        # imkansızdı. Artık hatanın tamamı ai_errors.log dosyasına yazılıyor
+        # (API yanıtı da dahil, örn. "model not found" veya "invalid API key").
+        # Kullanıcıya gösterilen cevap değişmiyor — ARIES yine normal
+        # "bulamadım" cevabına sessizce düşüyor, bu sadece admin için tanı kaydı.
+        try:
+            error_detail = str(e)
+            if hasattr(e, "response") and e.response is not None:
+                error_detail += f" | HTTP {e.response.status_code}: {e.response.text[:500]}"
+            with open("ai_errors.log", "a", encoding="utf-8") as f:
+                f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sağlayıcı: {AI_API_PROVIDER} | Hata: {error_detail}\n")
+        except Exception:
+            pass
         return None
 
 # 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-RUSÇA SÖZLÜK — dictionary_tr_ru.html'den alınmıştır
