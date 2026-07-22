@@ -6,6 +6,7 @@ import math
 import requests
 import os
 import re
+import html
 from difflib import get_close_matches
 from datetime import datetime, timedelta
 
@@ -1304,6 +1305,37 @@ def add_turkish_translation_to_log_line(log_line):
         return log_line
 
 
+def format_code_blocks(text):
+    """🩹 KOD YAMA (EKLENTİ) — AI cevabında ```dil ... ``` şeklinde kod bloğu
+    varsa (veya `satır içi kod` varsa), bunu düz metin olarak göstermek yerine
+    kopyalanabilir, sözdizimi rengi taşıyan bir kod kutusuna çevirir. Kod
+    içeriği HTML olarak kaçışlanır (escape) ki kullanıcının/AI'nin yazdığı
+    < > & gibi karakterler sayfayı bozmasın veya istemsiz HTML çalıştırmasın."""
+    if not text:
+        return text
+
+    def _replace_block(match):
+        lang = (match.group(1) or "").strip()
+        code = match.group(2)
+        escaped_code = html.escape(code.strip("\n"))
+        lang_label = lang if lang else "kod"
+        return (
+            '<div class="code-block">'
+            f'<div class="code-block-header"><span class="code-lang">{html.escape(lang_label)}</span>'
+            '<button class="copy-btn" onclick="copyCodeBlock(this)">📋 Kopyala</button></div>'
+            f'<pre><code>{escaped_code}</code></pre>'
+            '</div>'
+        )
+
+    # ```dil\nkod\n``` bloklarını yakala (çok satırlı)
+    text = re.sub(r'```(\w*)\n?(.*?)```', _replace_block, text, flags=re.DOTALL)
+
+    # Tek satırlık `kod` ifadelerini basit <code> etiketine çevir
+    text = re.sub(r'`([^`\n]+)`', lambda m: f'<code class="inline-code">{html.escape(m.group(1))}</code>', text)
+
+    return text
+
+
 def build_reply(text):
     """Kullanıcı 'do you speak english/russian' dediyse, o dil modu session'da
     kayıtlıdır; bu fonksiyon her cevabı otomatik olarak o dile çevirip döner."""
@@ -1763,7 +1795,8 @@ def ask():
         conversation_history.append({"role": "user", "content": raw_message})
         conversation_history.append({"role": "assistant", "content": ai_reply})
         session['chat_history'] = conversation_history[-10:]  # bellek şişmesin diye son 10 mesajla sınırla
-        return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#8e44ad;">Genişletilmiş Zeka</span><br>{ai_reply}')
+        ai_reply_formatted = format_code_blocks(ai_reply)  # 🩹 KOD YAMA (EKLENTİ) — kod bloklarını düzgün göster
+        return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#8e44ad;">Genişletilmiş Zeka</span><br>{ai_reply_formatted}')
 
     save_log("CEVAPLANAMADI")
     if is_buddy_mode:
