@@ -1037,6 +1037,30 @@ world_countries = {
     "sirbistan": {"b": "Belgrad", "k": "Avrupa", "lat": 44.79, "lon": 20.45, "bilgi": "Balkanlar'ın merkezinde yer alan, denize kıyısı olmayan bir ülkedir."},
     "kibris": {"b": "Lefkoşa", "k": "Asya/Avrupa", "lat": 35.19, "lon": 33.38, "bilgi": "Akdeniz'in doğusunda yer alan bir ada ülkesidir."},
     "almanya:{"b": "berlın", "k": "avrupa", "lat": 52.52, "lon": 13.40, "bilgi": "Avrupa'nın en büyük ekonomisine sahip, sanayisi ve teknolojisiyle lider bir ülkedir."
+    "Fransa:{"b": "paris", "k": "avrupa", "lat": 48.85, "lon": 02.35, "bilgi": "Moda, mutfak sanatı, zengin tarihi ve Eyfel Kulesi gibi ikonik yapılarıyla tanınan bir ülkedir."
+    "birleşik krallık:{"b": "londra", "k": "avrupa", "lat": 51.50, "lon": -00.12, "bilgi": "Büyük Britanya adasında yer alan, küresel finans ve kültür merkezi olan bir krallıktır."
+    "rusya:{"b": "moskova", "k": "avrupa/asya", "lat": 55.75, "lon": 37.71, "bilgi": "Topraklarının bir kısmı Avrupa'da olan, yüzölçümü bakımından dünyanın en büyük ülkesidir."
+    "türkiye:{"b": "ankara", "k": "avrupa/asya", "lat": 39.93, "lon": 32.85, "bilgi": "Asya ve Avrupa'yı birbirine bağlayan, köklü tarihi ve stratejik konumuyla bilinen bir ülkedir."
+    "slovakya": {"b": "Bratislava", "k": "Avrupa", "lat": 48.14, "lon": 17.10, "bilgi": "Orta Avrupa'da yer alan, kaleleri ve kişi başına düşen otomobil üretimiyle ünlü bir ülkedir."},
+    "hirvatistan": {"b": "Zagreb", "k": "Avrupa", "lat": 45.81, "lon": 15.97, "bilgi": "Adriyatik Denizi kıyısında uzun bir sahili ve binlerce adası bulunan bir Balkan ülkesidir."},
+    "bosna_hersek": {"b": "Saraybosna", "k": "Avrupa", "lat": 43.85, "lon": 18.41, "bilgi": "Balkanlar'da yer alan, çok kültürlü yapısı ve tarihi Mostar Köprüsü ile tanınan bir ülkedir."},
+    "arnavutluk": {"b": "Tiran", "k": "Avrupa", "lat": 41.32, "lon": 19.81, "bilgi": "Balkanlar'ın güneybatısında, Adriyatik kıyısında yer alan dağlık ve tarihi bir ülkedir."},
+    "kuzey_makedonya": {"b": "Üsküp", "k": "Avrupa", "lat": 41.99, "lon": 21.43, "bilgi": "Balkanlar'da yer alan, Ohri Gölü ve zengin Osmanlı mirasıyla bilinen bir ülkedir."},
+    "slovenya": {"b": "Ljubljana", "k": "Avrupa", "lat": 46.05, "lon": 14.50, "bilgi": "Alpler ile Adriyatik arasında yer alan, yeşil doğası ve Bled Gölü ile ünlü bir ülkedir."},
+    "karadag": {"b": "Podgorica", "k": "Avrupa", "lat": 42.43, "lon": 19.26, "bilgi": "Adriyatik kıyısındaki fiyort benzeri Kotor Körfezi ve dik dağlarıyla bilinen bir Balkan ülkesidir."},
+    "moldova": {"b": "Kişinev", "k": "Avrupa", "lat": 47.01, "lon": 28.85, "bilgi": "Ukrayna ve Romanya arasında yer alan, şarap bağları ve mahzenleriyle ünlü bir Doğu Avrupa ülkesidir."},
+    "belarus": {"b": "Minsk", "k": "Avrupa", "lat": 53.90, "lon": 27.56, "bilgi": "Doğu Avrupa'da denize kıyısı olmayan, geniş ormanları ve Sovyet mimarisiyle bilinen bir ülkedir."},
+    "izlanda": {"b": "Reykjavik", "k": "Avrupa", "lat": 64.14, "lon": -21.89, "bilgi": "Kuzey Atlantik'te yer alan, volkanları, gayzerleri ve buzullarıyla ünlü bir ada ülkesidir."},
+    "estonya": {"b": "Tallinn", "k": "Avrupa", "lat": 59.43, "lon": 24.75, "bilgi": "Baltık Denizi kıyısında yer alan, gelişmiş dijital altyapısı ve e-devlet uygulamalarıyla tanınan bir ülkedir."},
+    "letonya": {"b": "Riga", "k": "Avrupa", "lat": 56.94, "lon": 24.10, "bilgi": "Baltık ülkelerinden biri olan, Art Nouveau mimarisi ve geniş ormanlık alanlarıyla bilinen bir ülkedir."},
+    "litvanya": {"b": "Vilnius", "k": "Avrupa", "lat": 54.68, "lon": 25.27, "bilgi": "Baltık bölgesinde yer alan, barok mimarili tarihi eski şehri ve coğrafi merkeziyle ünlü bir ülkedir."},
+    "luksemburg": {"b": "Lüksemburg", "k": "Avrupa", "lat": 49.61, "lon": 6.13, "bilgi": "Yüksek yaşam standartları ve güçlü finans sektörüyle bilinen, Avrupa'nın küçük bir dükalığıdır."},
+    "malta": {"b": "Valletta", "k": "Avrupa", "lat": 35.89, "lon": 14.51, "bilgi": "Akdeniz'in güneyinde yer alan, tarihi şövalyeleri ve plajlarıyla ünlü küçük bir takımada ülkesidir."},
+    "andorra": {"b": "Andorra la Vella", "k": "Avrupa", "lat": 42.50, "lon": 1.52, "bilgi": "Pireneler'de Fransa ve İspanya arasında yer alan, kayak merkezleri ve vergisiz alışverişiyle bilinen bir prensliktir."},
+    "lihtenstayn": {"b": "Vaduz", "k": "Avrupa", "lat": 47.14, "lon": 9.52, "bilgi": "Alp Dağları'nda İsviçre ve Avusturya arasında yer alan, dünyanın en küçük mikro devletlerinden biridir."},
+    "monako": {"b": "Monako", "k": "Avrupa", "lat": 43.73, "lon": 7.42, "bilgi": "Fransız Rivierası'nda yer alan, lüks yaşamı, kumarhaneleri ve Formula 1 yarışı ile ünlü bir prensliktir."},
+    "san_marino": {"b": "San Marino", "k": "Avrupa", "lat": 43.94, "lon": 12.44, "bilgi": "İtalya toprakları ile çevrili, dünyanın en eski cumhuriyetlerinden biri olan tarihi bir mikro devlettir."},
+    "vatikan": {"b": "Vatikan", "k": "Avrupa", "lat": 41.90, "lon": 12.45, "bilgi": "Roma şehri içinde yer alan, Katolik kilisesinin yönetim merkezi ve dünyanın en küçük bağımsız devletidir."}
     # Asya
     "japonya": {"b": "Tokyo", "k": "Asya", "lat": 35.68, "lon": 139.69, "bilgi": "Pasifik Okyanusu'nda yer alan, teknolojisiyle bilinen bir ada ülkesidir."},
     "cin": {"b": "Pekin", "k": "Asya", "lat": 39.90, "lon": 116.41, "bilgi": "Nüfus bakımından dünyanın en kalabalık ülkelerinden biridir."},
@@ -1059,7 +1083,32 @@ world_countries = {
     "urdun": {"b": "Amman", "k": "Asya", "lat": 31.95, "lon": 35.93, "bilgi": "Orta Doğu'da yer alan, Petra antik kentiyle bilinen bir ülkedir."},
     "lubnan": {"b": "Beyrut", "k": "Asya", "lat": 33.89, "lon": 35.50, "bilgi": "Doğu Akdeniz kıyısında yer alan küçük bir Orta Doğu ülkesidir."},
     "israil": {"b": "Kudüs / Tel Aviv", "k": "Asya", "lat": 31.77, "lon": 35.21, "bilgi": "Orta Doğu'da yer alan bir ülkedir; başkent statüsü uluslararası düzeyde tartışmalıdır, birçok ülke büyükelçiliğini Tel Aviv'de bulundurur."},
-
+    "hindistan": {"b": "Yeni Delhi", "k": "Asya", "lat": 28.61, "lon": 77.20, "bilgi": "Güney Asya'da yer alan, zengin kültürü ve nüfus yoğunluğuyla bilinen devasa bir ülkedir."},
+    "vietnam": {"b": "Hanoi", "k": "Asya", "lat": 21.03, "lon": 105.83, "bilgi": "Güneydoğu Asya'da yer alan, nehirleri ve zengin tarihiyle tanınan bir ülkedir."},
+    "tayland": {"b": "Bangkok", "k": "Asya", "lat": 13.75, "lon": 100.50, "bilgi": "Güneydoğu Asya'da, tropikal plajları ve görkemli kraliyet saraylarıyla ünlü bir ülkedir."},
+    "filipinler": {"b": "Manila", "k": "Asya", "lat": 14.60, "lon": 120.98, "bilgi": "Pasifik Okyanusu'nda yer alan, binlerce adadan oluşan bir Güneydoğu Asya ülkesidir."},
+    "malezya": {"b": "Kuala Lumpur", "k": "Asya", "lat": 3.14, "lon": 101.69, "bilgi": "Yağmur ormanları ve hareketli başkentindeki ikiz kuleleriyle tanınan bir ülkedir."},
+    "singapur": {"b": "Singapur", "k": "Asya", "lat": 1.35, "lon": 103.82, "bilgi": "Güneydoğu Asya'da, küresel bir finans merkezi olan gelişmiş bir ada şehir devletidir."},
+    "afganistan": {"b": "Kabil", "k": "Asya", "lat": 34.53, "lon": 69.17, "bilgi": "Güney ve Orta Asya'nın kavşağında yer alan, dağlık ve köklü geçmişe sahip bir ülkedir."},
+    "azerbaycan": {"b": "Bakü", "k": "Asya", "lat": 40.40, "lon": 49.87, "bilgi": "Hazar Denizi kıyasında yer alan, zengin petrol ve doğal gaz rezervlerine sahip bir Kafkasya ülkesidir."},
+    "turkmenistan": {"b": "Aşkabat", "k": "Asya", "lat": 37.96, "lon": 58.38, "bilgi": "Orta Asya'da yer alan, Karakum Çölü ve mermer mimarili başkentiyle tanınan bir ülkedir."},
+    "kirgizistan": {"b": "Bişkek", "k": "Asya", "lat": 42.87, "lon": 74.59, "bilgi": "Orta Asya'da yer alan, Tanrı Dağları ve göçebe kültürü mirasıyla bilinen dağlık bir ülkedir."},
+    "tacikistan": {"b": "Duşanbe", "k": "Asya", "lat": 38.56, "lon": 68.78, "bilgi": "Orta Asya'da yer alan, Pamir Dağları ile çevrili denize kıyısı olmayan dağlık bir ülkedir."},
+    "mogolistan": {"b": "Ulanbatur", "k": "Asya", "lat": 47.88, "lon": 106.89, "bilgi": "Rusya ve Çin arasında yer alan, uçsuz bucaksız bozkırları ve göçebe yaşam tarzıyla ünlü bir ülkedir."},
+    "nepal": {"b": "Katmandu", "k": "Asya", "lat": 27.71, "lon": 85.32, "bilgi": "Himalayalar'da yer alan, dünyanın en yüksek zirvesi Everest'e ev sahipliği yapan bir ülkedir."},
+    "sri lanka": {"b": "Sri Jayawardenepura Kotte", "k": "Asya", "lat": 6.92, "lon": 79.86, "bilgi": "Hint Okyanusu'nda yer alan, çay tarlaları ve yağmur ormanlarıyla ünlü bir ada ülkesidir."},
+    "yemen": {"b": "Sana", "k": "Asya", "lat": 15.35, "lon": 44.20, "bilgi": "Arap Yarımadası'nın güneyinde yer alan, antik mimarisi ve kahve kültürüyle bilinen bir ülkedir."},
+    "umman": {"b": "Maskat", "k": "Asya", "lat": 23.58, "lon": 58.40, "bilgi": "Arap Yarımadası'nın güneydoğu kıyısında yer alan, tarihi kaleleri ve çöpleriyle bilinen bir ülkedir."},
+    "kuveyt": {"b": "Kuveyt", "k": "Asya", "lat": 29.37, "lon": 47.97, "bilgi": "Basra Körfezi'nde yer alan, modern mimarisi ve zengin petrol yataklarıyla tanınan bir ülkedir."},
+    "bahreyn": {"b": "Maname", "k": "Asya", "lat": 26.22, "lon": 50.58, "bilgi": "Basra Körfezi'nde yer alan, küçük adalardan oluşan bir Orta Doğu ülkesidir."},
+    "bangladeş": {"b": "Dakka", "k": "Asya", "lat": 23.81, "lon": 90.41, "bilgi": "Güney Asya'da, nüfus yoğunluğu en yüksek ülkelerden biridir."},
+    "myanmar": {"b": "Naypyidaw", "k": "Asya", "lat": 19.76, "lon": 96.07, "bilgi": "Güneydoğu Asya'da yer alan, altın pagodaları ve Budist kültürüyle tanınan bir ülkedir."},
+    "kamboçya": {"b": "Phnom Penh", "k": "Asya", "lat": 11.55, "lon": 104.91, "bilgi": "Güneydoğu Asya'da yer alan, devasa Angkor Wat tapınak kompleksiyle ünlü bir ülkedir."},
+    "laos": {"b": "Vientiane", "k": "Asya", "lat": 17.97, "lon": 102.63, "bilgi": "Güneydoğu Asya'da yer alan, denize kıyısı olmayan dağlık ve ormanlık bir ülkedir."},
+    "maledivler": {"b": "Male", "k": "Asya", "lat": 4.17, "lon": 73.51, "bilgi": "Hint Okyanusu'nda yer alan, mercan adaları ve lüks su üstü villalarıyla ünlü popüler bir tatil ülkesidir."},
+    "bhutan": {"b": "Thimphu", "k": "Asya", "lat": 27.47, "lon": 89.63, "bilgi": "Himalayalar'ın doğusunda yer alan, Budist manastırları ve 'Brüt Ulusal Mutluluk' endeksiyle bilinen krallıktır."},
+    "brunei": {"b": "Bandar Seri Begavan", "k": "Asya", "lat": 4.89, "lon": 114.94, "bilgi": "Borneo Adası'nda yer alan, zengin petrol yatakları ve görkemli camileriyle bilinen bir sultanlıktır."},
+    "doğu timor": {"b": "Dili", "k": "Asya", "lat": -8.55, "lon": 125.56, "bilgi": "Güneydoğu Asya'da, Timor adasının doğusunda yer alan mercan resifleriyle ünlü bir ada ülkesidir."}
     # Afrika
     "fas": {"b": "Rabat", "k": "Afrika", "lat": 34.02, "lon": -6.84, "bilgi": "Kuzey Afrika'da, Cebelitarık Boğazı'na yakın konumda yer alan bir ülkedir."},
     "cezayir": {"b": "Cezayir", "k": "Afrika", "lat": 36.75, "lon": 3.06, "bilgi": "Kuzey Afrika'da, Akdeniz kıyısında yer alan, yüzölçümü açısından Afrika'nın en büyük ülkesidir."},
@@ -1068,18 +1117,80 @@ world_countries = {
     "guney afrika": {"b": "Pretoria", "k": "Afrika", "lat": -25.75, "lon": 28.19, "bilgi": "Afrika kıtasının en güneyinde yer alan, üç başkenti olan bir ülkedir."},
     "kenya": {"b": "Nairobi", "k": "Afrika", "lat": -1.29, "lon": 36.82, "bilgi": "Doğu Afrika'da yer alan, safari turizmiyle bilinen bir ülkedir."},
     "etiyopya": {"b": "Addis Ababa", "k": "Afrika", "lat": 9.03, "lon": 38.74, "bilgi": "Doğu Afrika'da yer alan, hiç sömürge olmamış nadir Afrika ülkelerinden biridir."},
-
+        "somali": {"b": "Mogadişu", "k": "Afrika", "lat": 2.04, "lon": 45.34, "bilgi": "Afrika Boynuzu'nda yer alan, kıtanın en uzun kıyı şeridine sahip stratejik bir ülkesidir."},
+    "sudan_guney": {"b": "Cuba", "k": "Afrika", "lat": 4.85, "lon": 31.60, "bilgi": "2011 yılında Sudan'dan ayrılarak kurulan, dünyanın en genç bağımsız ülkesidir."},
+    "mali": {"b": "Bamako", "k": "Afrika", "lat": 12.63, "lon": -8.00, "bilgi": "Batı Afrika'da yer alan, tarihi Timbuktu şehri ve antik ticaret yollarıyla bilinen bir ülkedir."},
+    "nijer": {"b": "Niamey", "k": "Afrika", "lat": 13.51, "lon": 2.11, "bilgi": "Batı Afrika'da denize kıyısı olmayan, büyük bölümü Sahra Çölü ile kaplı bir ülkedir."},
+    "cad": {"b": "N'Djamena", "k": "Afrika", "lat": 12.13, "lon": 15.05, "bilgi": "Afrika'nın merkezinde yer alan, adını sınırındaki Çad Gölü'nden alan geniş bir ülkedir."},
+    "orta_afrika": {"b": "Bangui", "k": "Afrika", "lat": 4.39, "lon": 18.55, "bilgi": "Kıtanın tam merkezinde yer alan, zengin elmas ve mineral yataklarına sahip bir ülkedir."},
+    "kongo_cumhuriyeti": {"b": "Brazzaville", "k": "Afrika", "lat": -4.26, "lon": 15.28, "bilgi": "Orta Afrika'da, Kongo Demokratik Cumhuriyeti'nin komşusu olan ve Kongo Nehri kıyısında yer alan ülkedir."},
+    "gabon": {"b": "Libreville", "k": "Afrika", "lat": 0.41, "lon": 9.45, "bilgi": "Batı Afrika kıyısında yer alan, topraklarının büyük kısmı sık yağmur ormanlarıyla kaplı petrol zengini bir ülkedir."},
+    "ekvator_ginesi": {"b": "Malabo", "k": "Afrika", "lat": 3.75, "lon": 8.76, "bilgi": "Orta Afrika'da yer alan, anakara ve adalardan oluşan, resmi dili İspanyolca olan tek Afrika ülkesidir."},
+    "ruanda": {"b": "Kigali", "k": "Afrika", "lat": -1.94, "lon": 30.06, "bilgi": "Doğu Afrika'da yer alan, dağlık coğrafyası nedeniyle 'Bin Tepeli Ülke' olarak anılan temiz ve düzenli bir ülkedir."},
+    "burundi": {"b": "Gitega", "k": "Afrika", "lat": -3.42, "lon": 29.91, "bilgi": "Doğu Afrika'da, Tanganyika Gölü kıyısında yer alan, tepelik ve nüfus yoğunluğu yüksek küçük bir ülkedir."},
+    "malavi": {"b": "Lilongwe", "k": "Afrika", "lat": -13.96, "lon": 33.77, "bilgi": "Doğu Afrika'da yer alan, topraklarının büyük kısmını kaplayan devasa Malavi Gölü ile tanınan ülkedir."},
+    "lesotho": {"b": "Maseru", "k": "Afrika", "lat": -29.31, "lon": 27.48, "bilgi": "Güney Afrika Cumhuriyeti toprakları tarafından tamamen kuşatılmış, yüksek rakımlı bir dağ krallığıdır."},
+    "esvatini": {"b": "Mbabane", "k": "Afrika", "lat": -26.30, "lon": 31.13, "bilgi": "Güney Afrika ve Mozambik arasında yer alan, mutlak monarşiyle yönetilen küçük bir Afrika krallığıdır."},
+    "madagaskar": {"b": "Antananarivo", "k": "Afrika", "lat": -18.88, "lon": 47.51, "bilgi": "Hint Okyanusu'nda yer alan, kendine özgü biyoçeşitliliğiyle ünlü dünyanın en büyük ada ülkelerinden biridir."},
+    "morityus": {"b": "Port Louis", "k": "Afrika", "lat": -20.16, "lon": 57.50, "bilgi": "Hint Okyanusu'nda yer alan, tropikal plajları, lagünleri ve mercan resifleriyle ünlü turistik bir ada ülkesidir."},
+    "seyseller": {"b": "Victoria", "k": "Afrika", "lat": -4.61, "lon": 55.45, "bilgi": "Hint Okyanusu'nda 115 adadan oluşan, Afrika'nın nüfus ve yüzölçümü bakımından en küçük ülkesidir."},
+    "komorlar": {"b": "Moroni", "k": "Afrika", "lat": -11.70, "lon": 43.25, "bilgi": "Madagaskar ile Afrika anakarası arasında, Mozambik Kanalı'nda yer alan volkanik bir takımada ülkesidir."},
+    "yeşil_burun": {"b": "Praia", "k": "Afrika", "lat": 14.93, "lon": -23.51, "bilgi": "Atlas Okyanusu'nda, Senegal açıklarında yer alan, Portekiz ve Afrika kültürlerinin harmanlandığı bir ada ülkesidir."},
+    "sao_tome": {"b": "Sao Tome", "k": "Afrika", "lat": 0.33, "lon": 6.73, "bilgi": "Gine Körfezi'nde, ekvator çizgisi yakınında yer alan, kakao üretimiyle bilinen küçük bir ada ülkesidir."},
+    "gine": {"b": "Konakri", "k": "Afrika", "lat": 9.53, "lon": -13.67, "bilgi": "Batı Afrika'da yer alan, dünyadaki boksit (alüminyum cevheri) rezervlerinin büyük kısmına sahip kıyı ülkesidir."},
+    "gine_bissau": {"b": "Bissau", "k": "Afrika", "lat": 11.86, "lon": -15.59, "bilgi": "Batı Afrika'da, Atlas Okyanusu kıyısında yer alan, mangrov ormanları ve nehir ağızlarıyla kaplı küçük bir ülkedir."},
+    "sierra_leone": {"b": "Freetown", "k": "Afrika", "lat": 8.48, "lon": -13.23, "bilgi": "Batı Afrika'da yer alan, elmas madenleri ve doğal limanıyla bilinen tarihi bir kıyı ülkesidir."},
+    "liberya": {"b": "Monrovia", "k": "Afrika", "lat": 6.31, "lon": -10.80, "bilgi": "Batı Afrika'da, azat edilmiş Amerikalı köleler tarafından kurulan Afrika'nın ilk bağımsız cumhuriyetidir."},
+    "burkina_faso": {"b": "Vagadugu", "k": "Afrika", "lat": 12.37, "lon": -1.52, "bilgi": "Batı Afrika'da denize kıyısı olmayan, kültürel festivalleri ve sinema sektörüyle tanınan bir ülkedir."},
+    "togo": {"b": "Lome", "k": "Afrika", "lat": 6.13, "lon": 1.22, "bilgi": "Batı Afrika'da yer alan, kuzeyden güneye uzanan ince şerit şeklinde palmiye sahilleriyle ünlü bir ülkedir."},
+    "benin": {"b": "Porto-Novo", "k": "Afrika", "lat": 6.49, "lon": 2.62, "bilgi": "Batı Afrika'da, eski Dahomey Krallığı'nın topraklarında kurulu, vudu kültürünün doğduğu yer olan ülkedir."},
+    "gambiya": {"b": "Banjul", "k": "Afrika", "lat": 13.45, "lon": -16.57, "bilgi": "Gambiya Nehri boyunca uzanan ve Senegal tarafından çevrelenmiş olan Afrika anakarasındaki en küçük ülkedir."},
+    "eritre": {"b": "Asmara", "k": "Afrika", "lat": 15.33, "lon": 38.93, "bilgi": "Doğu Afrika'da, Kızıldeniz kıyısında yer alan, İtalyan mimari mirasına sahip dağlık bir ülkedir."},
+    "cibuti": {"b": "Cibuti", "k": "Afrika", "lat": 11.58, "lon": 43.14, "bilgi": "Kızıldeniz girişindeki stratejik konumu nedeniyle birçok ülkenin askeri üssüne ev sahipliği yapan küçük ülkedir."
     # Amerika
     "brezilya": {"b": "Brasilia", "k": "Güney Amerika", "lat": -15.79, "lon": -47.88, "bilgi": "Güney Amerika'da yer alan, Amazon Ormanları'nın büyük kısmını barındıran ülkedir."},
     "arjantin": {"b": "Buenos Aires", "k": "Güney Amerika", "lat": -34.60, "lon": -58.38, "bilgi": "Güney Amerika'da yer alan, tango ve futbolla özdeşleşmiş bir ülkedir."},
     "sili": {"b": "Santiago", "k": "Güney Amerika", "lat": -33.45, "lon": -70.65, "bilgi": "And Dağları boyunca uzanan, ince ve uzun şekliyle bilinen bir Güney Amerika ülkesidir."},
     "meksika": {"b": "Meksiko", "k": "Kuzey Amerika", "lat": 19.43, "lon": -99.13, "bilgi": "Kuzey Amerika'nın güneyinde yer alan, Aztek ve Maya mirasına sahip bir ülkedir."},
     "kanada": {"b": "Ottava", "k": "Kuzey Amerika", "lat": 45.42, "lon": -75.70, "bilgi": "Yüzölçümü bakımından dünyanın en büyük ikinci ülkesidir."},
-
+        "abd": {"b": "Washington D.C.", "k": "Kuzey Amerika", "lat": 38.90, "lon": -77.03, "bilgi": "Kuzey Amerika'da yer alan, küresel ekonomik ve askeri etkiye sahip 50 eyaletten oluşan bir ülkedir."},
+    "kolombiya": {"b": "Bogota", "k": "Güney Amerika", "lat": 4.71, "lon": -74.07, "bilgi": "Güney Amerika'nın kuzeyinde yer alan, kahve üretimi ve zengin biyolojik çeşitliliğiyle bilinen bir ülkedir."},
+    "peru": {"b": "Lima", "k": "Güney Amerika", "lat": -12.04, "lon": -77.03, "bilgi": "İnka İmparatorluğu'nun merkezi olan, dünyaca ünlü Machu Picchu antik kentine ev sahipliği yapan ülkedir."},
+    "venezuela": {"b": "Karakas", "k": "Güney Amerika", "lat": 10.48, "lon": -66.90, "bilgi": "Güney Amerika'nın kuzey kıyısında yer alan, dünyanın en büyük kanıtlanmış petrol rezervlerine sahip ülkesidir."},
+    "ekvador": {"b": "Quito", "k": "Güney Amerika", "lat": -0.18, "lon": -78.46, "bilgi": "Adını üzerinden geçen ekvator çizgisinden alan, Galapagos Adaları ile ünlü bir Güney Amerika ülkesidir."},
+    "bolivya": {"b": "Sucre / La Paz", "k": "Güney Amerika", "lat": -16.50, "lon": -68.11, "bilgi": "And Dağları üzerinde yer alan, dünyanın en büyük tuz çölü Salar de Uyuni'ye sahip bir ülkedir."},
+    "paraguay": {"b": "Asuncion", "k": "Güney Amerika", "lat": -25.26, "lon": -57.57, "bilgi": "Güney Amerika'nın merkezinde denize kıyısı olmayan, geniş nehir hatları ve tarım arazileriyle bilinen ülkedir."},
+    "uruguay": {"b": "Montevideo", "k": "Güney Amerika", "lat": -34.90, "lon": -56.16, "bilgi": "Yüksek yaşam standartları, plajları ve ilerici sosyal politikalarıyla tanınan küçük bir Güney Amerika ülkesidir."},
+    "guyana": {"b": "Georgetown", "k": "Güney Amerika", "lat": 6.80, "lon": -58.15, "bilgi": "Karayip kültürüyle güçlü bağları olan, sık yağmur ormanları ve İngilizce resmi diliyle bilinen Güney Amerika ülkesidir."},
+    "surinam": {"b": "Paramaribo", "k": "Güney Amerika", "lat": 5.85, "lon": -55.20, "bilgi": "Yüzölçümü ve nüfus bakımından Güney Amerika'nın en küçük bağımsız ülkesidir, resmi dili Felemenkçedir."},
+    "kuba": {"b": "Havana", "k": "Kuzey Amerika", "lat": 23.11, "lon": -82.36, "bilgi": "Karayipler'de yer alan, puroları, klasik arabaları, müziği ve sosyalist geçmişiyle ünlü bir ada ülkesidir."},
+    "dominik_cumhuriyeti": {"b": "Santo Domingo", "k": "Kuzey Amerika", "lat": 18.48, "lon": -69.93, "bilgi": "Karayipler'deki Hispanyola adasında yer alan, beyaz kumlu plajları ve tatil köyleriyle ünlü turistik bir ülkedir."},
+    "haiti": {"b": "Port-au-Prince", "k": "Kuzey Amerika", "lat": 18.53, "lon": -72.33, "bilgi": "Hispanyola adasının batısında yer alan, tarihte köle isyanıyla bağımsızlığını kazanan ilk siyahi cumhuriyettir."},
+    "jamaika": {"b": "Kingston", "k": "Kuzey Amerika", "lat": 17.97, "lon": -76.79, "bilgi": "Karayipler'de yer alan, reggae müziğinin doğduğu yer ve dünyaca ünlü atletleriyle tanınan bir ada ülkesidir."},
+    "kosta_rika": {"b": "San Jose", "k": "Kuzey Amerika", "lat": 9.92, "lon": -84.08, "bilgi": "Orta Amerika'da ordusu bulunmayan, doğa koruma alanları ve 'Pura Vida' felsefesiyle bilinen bir ülkedir."},
+    "panama": {"b": "Panama", "k": "Kuzey Amerika", "lat": 8.98, "lon": -79.51, "bilgi": "Kuzey ve Güney Amerika'yı birleştiren, Atlas ve Büyük Okyanus'u bağlayan kanalıyla ünlü stratejik ülkedir."},
+    "guatemala": {"b": "Guatemala", "k": "Kuzey Amerika", "lat": 14.63, "lon": -90.50, "bilgi": "Orta Amerika'da yer alan, zengin Maya kalıntıları, volkanları ve kahve tarlalarıyla tanınan bir ülkedir."},
+    "honduras": {"b": "Tegucigalpa", "k": "Kuzey Amerika", "lat": 14.07, "lon": -87.19, "bilgi": "Orta Amerika'da, Karayip Denizi kıyısında yer alan, yağmur ormanları ve muz üretimiyle bilinen bir ülkedir."},
+    "nikaragua": {"b": "Managua", "k": "Kuzey Amerika", "lat": 12.11, "lon": -86.23, "bilgi": "Orta Amerika'nın yüzölçümü en büyük ülkesidir, volkanik gölleri ve el değmemiş doğasıyla tanınır."},
+    "el_salvador": {"b": "San Salvador", "k": "Kuzey Amerika", "lat": 13.69, "lon": -89.24, "bilgi": "Orta Amerika'da yer alan, yüzölçümü en küçük fakat nüfus yoğunluğu en yüksek olan Pasifik kıyısı ülkesidir."},
+    "bahamalar": {"b": "Nassau", "k": "Kuzey Amerika", "lat": 25.04, "lon": -77.34, "bilgi": "Atlas Okyanusu'nda, Florida açıklarında yer alan, yüzlerce mercan adasından oluşan turistik bir ülkedir."}
+    
     # Okyanusya
     "avustralya": {"b": "Kanberra", "k": "Okyanusya", "lat": -35.28, "lon": 149.13, "bilgi": "Hem kıta hem ülke olan, kendine özgü hayvan türleriyle bilinen bir ülkedir."},
     "yeni zelanda": {"b": "Wellington", "k": "Okyanusya", "lat": -41.29, "lon": 174.78, "bilgi": "Pasifik Okyanusu'nda yer alan, doğal manzaralarıyla ünlü bir ada ülkesidir."}
 }
+        "papua_yeni_gine": {"b": "Port Moresby", "k": "Okyanusya", "lat": -9.44, "lon": 147.18, "bilgi": "Kültürel ve dilsel çeşitliliğiyle bilinen, yüzlerce yerli kabileye ev sahipliği yapan büyük bir ada ülkesidir."},
+    "fiji": {"b": "Suva", "k": "Okyanusya", "lat": -18.12, "lon": 178.45, "bilgi": "Melanezya bölgesinde yer alan, mercan resifleri ve tropikal plajlarıyla ünlü turistik bir ada ülkesidir."},
+    "samoa": {"b": "Apia", "k": "Okyanusya", "lat": -13.83, "lon": -171.75, "bilgi": "Polinezya'nın merkezinde yer alan, geleneksel yaşam tarzı ve volkanik adalarıyla tanınan bir ülkedir."},
+    "solomon_adalari": {"b": "Honiara", "k": "Okyanusya", "lat": -9.43, "lon": 159.95, "bilgi": "Papua Yeni Gine'nin doğusunda yer alan, dalış noktaları ve II. Dünya Savaşı batıklarıyla ünlü bir takımada ülkesidir."},
+    "vanuatu": {"b": "Port Vila", "k": "Okyanusya", "lat": -17.73, "lon": 168.32, "bilgi": "Güney Pasifik'te yer alan, aktif volkanları ve su altı postanesiyle bilinen bir adalar topluluğudur."},
+    "tonga": {"b": "Nuku'alofa", "k": "Okyanusya", "lat": -21.14, "lon": -175.20, "bilgi": "Pasifik'te hiçbir zaman sömürge olmamış, günümüzde de monarşiyle yönetilen tek ada krallığıdır."},
+    "kiribati": {"b": "Güney Tarawa", "k": "Okyanusya", "lat": 1.46, "lon": 173.03, "bilgi": "Ekvator çizgisi üzerinde yer alan ve küresel ısınma nedeniyle sular altında kalma riski taşıyan bir mercan adaları ülkesidir."},
+    "marshall_adalari": {"b": "Majuro", "k": "Okyanusya", "lat": 7.09, "lon": 171.38, "bilgi": "Mikronezya bölgesinde yer alan, ABD ile ilişkili ve geçmişteki nükleer test alanlarıyla bilinen bir ada ülkesidir."},
+    "mikronezya": {"b": "Palikir", "k": "Okyanusya", "lat": 6.92, "lon": 158.16, "bilgi": "Batı Pasifik'te yer alan ve yüzlerce küçük adadan oluşan federal bir ada devletidir."},
+    "palau": {"b": "Ngerulmud", "k": "Okyanusya", "lat": 7.50, "lon": 134.62, "bilgi": "Deniz biyolojisi açısından dünyanın en zengin bölgelerinden biri olan, koruma altındaki ada ülkesidir."},
+    "tuvalu": {"b": "Funafuti", "k": "Okyanusya", "lat": -8.52, "lon": 179.19, "bilgi": "Vatikan'dan sonra dünyanın en az nüfuslu ikinci bağımsız ülkesi olan küçük bir Polinezya ada devletidir."},
+    "nauru": {"b": "Yaren", "k": "Okyanusya", "lat": -0.55, "lon": 166.92, "bilgi": "Dünyanın en küçük ada ülkesidir ve resmi olarak belirlenmiş bir başkenti bulunmamaktadır."}
 
 # 📜 TARİH VERİ TABANI
 
@@ -1101,7 +1212,15 @@ historical_events = {
     "islahat fermani": "<b>1856 - Islahat Fermanı:</b> Gayrimüslim Osmanlı tebaasına dinî ve hukuki eşitlik haklarını genişleten fermandır.",
     "birinci mesrutiyet": "<b>1876 - Birinci Meşrutiyet:</b> Osmanlı'da ilk kez anayasal monarşiye geçişi sağlayan Kanun-i Esasi'nin ilanıdır.",
     "ikinci mesrutiyet": "<b>1908 - İkinci Meşrutiyet:</b> Jön Türkler ve İttihat ve Terakki'nin baskısıyla anayasal düzenin yeniden ilan edilmesidir.",
-
+    "istanbulun kusatilmasi ilk": "<b>1391 - İlk Osmanlı İstanbul Kuşatması:</b> Yıldırım Bayezid tarafından şehrin ilk kez ciddi şekilde abluka altına alındığı askeri harekat.",
+    "kosova savasi": "<b>1389 - Birinci Kosova Savaşı:</b> Balkanlar'daki Osmanlı hakimiyetini kesinleştiren, I. Murad'ın savaş meydanında şehit düştüğü tarihi zaferdir.",
+    "niğbolu savasi": "<b>1396 - Niğbolu Savaşı:</b> Yıldırım Bayezid'in Haçlı ordusunu büyük bir bozguna uğratarak 'Sultan-ı İklim-i Rum' unvanını aldığı savaştır.",
+    "ridaniye savasi": "<b>1517 - Ridaniye Savaşı:</b> Yavuz Sultan Selim'in Memlükleri yıkarak halifeliği Osmanlı Hanedanı'na geçirdiği ve Baharat Yolu'nu kontrol altına aldığı savaştır.",
+    "inebahti deniz savasi": "<b>1571 - İnebahtı Deniz Savaşı:</b> Osmanlı donanmasının Haçlı ittifakı karşısında aldığı ve Akdeniz'deki yenilmezlik mitini sarsan ilk büyük deniz mağlubiyetidir.",
+    "pruet savasi": "<b>1711 - Prut Savaşı:</b> Baltacı Mehmed Paşa komutasındaki Osmanlı ordusunun Rus Çarı I. Petro'yu kuşatarak büyük bir diplomatik ve askeri başarı kazandığı savaştır."},
+    "pasarofca antlasmasi": "<b>1718 - Pasarofça Antlaşması:</b> Osmanlı'da Batı'nın üstünlüğünün kabul edildiği ve zevk, sefa, modernleşme dönemi olan Lale Devri'ni başlatan antlaşmadır.",
+    "kucuk kaynarca": "<b>1774 - Küçük Kaynarca Antlaşması:</b> Kırım'ın kaybedildiği ve Osmanlı'nın ilk kez Müslüman bir topraktan vazgeçmek zorunda kaldığı ağır antlaşmadır.",
+    "yeniceri ocaginin kaldirilishi": "<b>1826 - Vaka-i Hayriye:</b> Sultan II. Mahmud tarafından Yeniçeri Ocağı'nın kaldırılarak yerine modern 'Asakir-i Mansure-i Muhammediye' ordusunun kurulmasıdır.",
     # 🇹🇷 Kurtuluş Savaşı ve Cumhuriyet Dönemi (EKLENTİ)
     "canakkale savasi": "<b>1915 - Çanakkale Savaşı:</b> Osmanlı kuvvetlerinin İtilaf Devletleri donanma ve kara ordularına karşı Çanakkale Boğazı'nı savunduğu ve büyük bir zafer kazandığı savaştır.",
     "samsuna cikis": "<b>19 Mayıs 1919 - Mustafa Kemal'in Samsun'a Çıkışı:</b> Kurtuluş Savaşı'nın manevi başlangıcı kabul edilen tarihtir.",
@@ -1117,7 +1236,16 @@ historical_events = {
     "ataturkun olumu": "<b>10 Kasım 1938 - Atatürk'ün Vefatı:</b> Türkiye Cumhuriyeti'nin kurucusu Mustafa Kemal Atatürk, Dolmabahçe Sarayı'nda hayatını kaybetti.",
     "kibris baris harekati": "<b>1974 - Kıbrıs Barış Harekâtı:</b> Türkiye'nin, adadaki Türklerin güvenliğini sağlamak amacıyla gerçekleştirdiği askeri harekâttır.",
     "12 eylul darbesi": "<b>1980 - 12 Eylül Darbesi:</b> Türk Silahlı Kuvvetleri'nin yönetime el koyduğu, ülke siyasetinde derin izler bırakan askeri müdahaledir.",
-
+    "trablusgarp savasi": "<b>1911 - Trablusgarp Savaşı:</b> Mustafa Kemal'in İtalyanlara karşı ilk askeri başarısını kazandığı, Osmanlı'nın Afrika'daki son toprağını kaybettiği savaştır.",
+    "balkan savaslari": "<b>1912-1913 - Balkan Savaşları:</b> Osmanlı'nın Avrupa'daki topraklarının neredeyse tamamını kaybettiği ve Anadolu'ya büyük göç dalgalarının başladığı trajik süreçtir.",
+    "mondros mütarekesi": "<b>30 Ekim 1918 - Mondros Ateşkes Antlaşması:</b> I. Dünya Savaşı sonrasında Osmanlı Devleti'ni fiilen bitiren ve Anadolu'yu işgale açık hale getiren anlaşmadır.",
+    "mudanya mütarekesi": "<b>1922 - Mudanya Ateşkes Antlaşması:</b> Kurtuluş Savaşı'nın askeri safhasını bitiren, İstanbul ve Boğazlar'ın savaşsız kurtarılmasını sağlayan diplomatik zaferdir.",
+    "saltanatin kaldirilmasi": "<b>1 Kasım 1922 - Saltanatın Kaldırılması:</b> TBMM tarafından alınan kararla Osmanlı saltanatı resmen sonlandırılmış, egemenlik tamamen millete geçmiştir.",
+    "hilafetin kaldirilmasi": "<b>3 Mart 1924 - Hilafetin Kaldırılması:</b> Laiklik ve modernleşme yolundaki en büyük adım atılmış, Tevhid-i Tedrisat Kanunu ile eğitim birleştirilmiştir.",
+    "medeni kanun": "<b>1926 - Türk Medeni Kanunu'nun Kabulü:</b> İsviçre'den uyarlanan kanunla aile hukukunda kadın-erkek eşitliği sağlanmış, dini hukuk yerine modern hukuk gelmiştir.",
+    "kadınlara secme hakki": "<b>5 Aralık 1934 - Kadınlara Seçme ve Seçilme Hakkı:</b> Türk kadınına milletvekili seçme ve seçilme hakkı verilerek birçok Avrupa ülkesinden önce siyasi haklar tanınmıştır. 🇹🇷",
+    "hatayin anavatana katilmasi": "<b>1939 - Hatay'ın Anavatana Katılması:</b> Atatürk'ün şahsi meselesi olarak gördüğü diplomasi mücadelesi sonuçlanmış, Hatay Cumhuriyeti kendi kararıyla Türkiye'ye katılmıştır.",
+    "cok partili donem": "<b>1946 - Çok Partili Hayata Geçiş:</b> Türkiye'de ilk çok partili genel seçimlerin yapılmasıyla demokratik süreçte yeni bir döneme girilmiştir.",
     # 🌍 Dünya Tarihi (EKLENTİ)
     "roma imparatorlugunun kurulusu": "<b>M.Ö. 27 - Roma İmparatorluğu'nun Kuruluşu:</b> Augustus'un ilk Roma İmparatoru unvanını almasıyla Roma Cumhuriyeti dönemi sona erip İmparatorluk dönemi başladı.",
     "roma imparatorlugunun yikilisi": "<b>M.S. 476 - Batı Roma İmparatorluğu'nun Yıkılışı:</b> Germen kumandanı Odoaker'in son Roma İmparatoru'nu tahttan indirmesiyle Orta Çağ'ın başlangıcı kabul edilir.",
@@ -1134,7 +1262,20 @@ historical_events = {
     "berlin duvarinin yikilisi": "<b>1989 - Berlin Duvarı'nın Yıkılışı:</b> Doğu ve Batı Almanya'yı ayıran duvarın yıkılması, Soğuk Savaş'ın sembolik sonu ve Almanya'nın birleşme sürecinin başlangıcıdır.",
     "aya ilk inis": "<b>1969 - Ay'a İlk İniş:</b> NASA'nın Apollo 11 görevi ile Neil Armstrong ve Buzz Aldrin, insanlık tarihinde ilk kez Ay yüzeyine ayak bastı."
 }
-
+    "coğrafi kesifler": "<b>15-17. yüzyıl - Coğrafi Keşifler:</b> Avrupalı gemicilerin yeni ticaret yolları ve kıtalar bulmasıyla dünyanın ekonomik dengesini tamamen değiştiren süreçtir.",
+    "otuz yil savaslari": "<b>1618-1648 - Otuz Yıl Savaşları:</b> Avrupa'da mezhep odaklı başlayan, Westphalia Antlaşması ile ulus devlet modelinin ve modern diplomasinin temelini atan küresel savaştır.",
+    "bolsevik ihtilali": "<b>1917 - Bolşevik İhtilali (Ekim Devrimi):</b> Rusya'da Çarlık rejiminin yıkılarak Lenin liderliğinde dünyadaki ilk sosyalist devletin (SSCB) kurulması sürecidir.",
+    "buyuk buhran": "<b>1929 - Büyük Buhran:</b> New York borsasının çökmesiyle başlayan, tüm dünyayı derinden sarsan ve totaliter rejimlerin yükselmesine yol açan ekonomik krizdir.",
+    "atom bombası atilmasi": "<b>1945 - Hiroşima ve Nagazaki'ye Atom Bombası Atılması:</b> ABD'nin nükleer silah kullanmasıyla II. Dünya Savaşı sonlanmış, insanlık nükleer çağın dehşetiyle tanışmıştır.",
+    "birlesmis milletler": "<b>1945 - Birleşmiş Milletler'in Kuruluşu:</b> II. Dünya Savaşı sonrasında küresel barış ve güvenliği korumak amacıyla kurulan uluslararası organizasyondur.",
+    "nato kurulusu": "<b>1949 - NATO'nun Kuruluşu:</b> Sovyet tehdidine karşı Batı Bloku ülkelerinin bir araya gelerek kurduğu askeri ve siyasi savunma ittifakıdır.",
+    "internet dogusu": "<b>1969 - ARPANET (İnternetin Temeli):</b> ABD Savunma Bakanlığı bünyesinde ilk bilgisayar ağının kurulmasıyla dijital çağın temelleri atılmıştır."
+     # 🇹🇷 İslamiyet Öncesi ve Erken Türk Tarihi (EKLENTİ)
+    "asya hun imparatorlugu": "<b>M.Ö. 220 - Asya Hun İmparatorluğu'nun Kuruluşu:</b> Teoman tarafından kurulan, tarihte bilinen ilk teşkilatlı Türk devletidir.",
+    "kavimler gocu": "<b>375 - Kavimler Göçü:</b> Hunların batıya hareketiyle Avrupa'nın etnik ve siyasi yapısını değiştiren, İlk Çağ'ı kapatıp Orta Çağ'ı açan devasa göç dalgasıdır.",
+    "gokturk devleti": "<b>552 - Bumin Kağan ve Göktürk Devleti:</b> Türk adını ilk kez resmi devlet ismi olarak kullanan ve Orhun Kitabeleri'ni bırakan köklü Türk imparatorluğudur.",
+    "talas savasi": "<b>751 - Talas Savaşı:</b> Abbasiler ve Çinliler arasındaki bu savaş, Türklerin İslamiyet ile kitlesel olarak tanışmasını sağlayan kırılma noktasıdır.",
+    
 # 🕋 DİNİ TERİMLER VERİ TABANI
 
 religious_database = {
@@ -1151,6 +1292,21 @@ religious_database = {
     "islamin sartlari": "<b>İslam'ın Şartları:</b> Kelime-i şehadet, namaz, oruç, zekât ve hacdan oluşan beş temel ibadettir.",
     "dört halife donemi": "<b>Dört Halife Dönemi (632-661):</b> Hz. Ebubekir, Hz. Ömer, Hz. Osman ve Hz. Ali'nin sırasıyla halifelik yaptığı, İslam'ın hızla yayıldığı dönemdir."
 }
+        "hudeybiye antlasmasi": "<b>Hudeybiye Antlaşması (628):</b> Müslümanlar ile Mekkeli müşrikler arasında yapılan, Müslümanların varlığının hukuken resmen tanındığı barış antlaşmasıdır.",
+    "hayberin fethi": "<b>Hayber'in Fethi (629):</b> Şam ticaret yolunun güvenliğini sağlamak amacıyla Yahudilerin elindeki kalelerin Müslümanlar tarafından fethedilmesidir.",
+    "mute savasi": "<b>Mute Savaşı (629):</b> Müslümanlar ile Bizans ordusu arasında yapılan ilk büyük savaştır.",
+    "tebuk seferi": "<b>Tebük Seferi (631):</b> Hz. Muhammed'in (s.a.v.) Bizans'ın saldırı hazırlığında olduğu istihbaratı üzerine çıktığı son askeri seferdir.",
+    "imanin sartlari": "<b>İmanın Şartları:</b> Allah'a, meleklere, kitaplara, peygamberlere, ahiret gününe, kadere ve kazaya inanmaktan oluşan altı inanç esasıdır.",
+    "kuranin toplanmasi": "<b>Kur'an'ın Mushaf Haline Getirilmesi:</b> Hz. Ebubekir döneminde, Yemame Savaşı'nda hafızların şehit düşmesi üzerine ayetlerin kitap halinde bir araya getirilmesidir.",
+    "kuranin cogaltilmasi": "<b>Kur'an'ın Çoğaltılması:</b> Hz. Osman döneminde, İslam coğrafyasının genişlemesiyle kıraat farklılıklarını önlemek amacıyla ana nüshanın çoğaltılıp merkezlere gönderilmesidir.",
+    "hadis": "<b>Hadis:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) söylediği sözler, yaptığı davranışlar ve onayladığı durumların bütünüdür.",
+    "tefsir": "<b>Tefsir:</b> Kur'an-ı Kerim'in ayetlerini nuzül sebeplerine, dil özelliklerine ve tarihi bağlamına göre açıklayan ve yorumlayan bilim dalıdır.",
+    "fikih": "<b>Fıkıh:</b> İslam hukuku anlamına gelen, Müslümanların ibadet, muamele ve cezai konularındaki ameli hükümlerini inceleyen bilim dalıdır.",
+    "kelam": "<b>Kelam:</b> İslam inanç esaslarını (akaid) akli ve nakli delillerle savunan, açıklayan dini ilim dalıdır.",
+    "tasavvuf": "<b>Tasavvuf:</b> İslam'ın kalbi ve ahlaki boyutunu öne çıkaran, nefsi terbiye ederek Allah'a manen yakınlaşmayı amaçlayan düşünce ve yaşam tarzıdır.",
+    "mevlit": "<b>Mevlit Kandili:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) dünyaya geldiği rebiyülevvel ayının on ikinci gecesidir.",
+    "regaip": "<b>Regaip Kandili:</b> Üç ayların başlangıcı olan recep ayının ilk perşembeyi cumaya bağlayan mübarek gecesidir.",
+    "berat": "<b>Berat Kandili:</b> Şaban ayının on beşinci gecesi olan, günahlardan arınma ve amel defterlerinin yazıldığına inanılan gecedir."
 
 # 🧬 ANATOMİ VE FEN VERİ TABANI
 
@@ -1171,6 +1327,21 @@ science_database = {
     "kromozom": "<b>Fen Bilgisi - Kromozom:</b> Hücre çekirdeğinde bulunan, DNA ve proteinden oluşan, genetik bilgiyi taşıyan yapılardır. İnsanda 23 çift kromozom bulunur.",
     "enzim": "<b>Fen Bilgisi - Enzim:</b> Canlı hücrelerde üretilen, kimyasal tepkimeleri hızlandıran özel protein yapılı biyokatalizörlerdir."
 }
+        "pankreas": "<b>Anatomi - Pankreas:</b> Hem sindirim enzimleri üreten hem de insülin ve glukagon gibi kan şekerini düzenleyen hormonları salgılayan karma bir bezdir.",
+    "dalak": "<b>Anatomi - Dalak:</b> Karın boşluğunun sol üst kısmında yer alan, eski alyuvarları yok eden, kanı süzen ve bağışıklık sistemine yardımcı olan organdır.",
+    "kloroplast": "<b>Fen Bilgisi - Kloroplast:</b> Sadece bitki hücrelerinde bulunan, yeşil rengini veren klorofil pigmentini barındıran ve fotosentezin gerçekleştiği organeldir.",
+    "ribozom": "<b>Fen Bilgisi - Ribozom:</b> Tüm canlı hücrelerde ortak olarak bulunan, amino asitleri birleştirerek hücrenin ihtiyacı olan proteinleri sentezleyen organeldir.",
+    "rna": "<b>Fen Bilgisi - RNA:</b> Genellikle tek zincirli olan, DNA'daki genetik şifreye göre protein sentezinde doğrudan görev alan nükleik asittir.",
+    "mitoz": "<b>Fen Bilgisi - Mitoz Bölünme:</b> Bir hücreden kalıtsal özellikleri ana hücreyle tamamen aynı olan iki yeni hücrenin oluşmasını sağlayan, büyüme ve onarımı gerçekleştiren bölünmedir.",
+    "mayoz": "<b>Fen Bilgisi - Mayoz Bölünme:</b> Üreme ana hücrelerinde görülen, kromozom sayısını yarıya indiren ve parça değişimi (krossing-over) ile çeşitlilik sağlayan bölünmedir.",
+    "omurilik": "<b>Anatomi - Omurilik:</b> Omurga kanalı içinde yer alan, beyin ile organlar arasındaki bilgi iletimini sağlayan ve refleks hareketlerini kontrol eden sinir sistemi yapısıdır.",
+    "deri": "<b>Anatomi - Deri:</b> Vücudun en büyük organı olup dış etkenlerden korur, solunuma ve boşaltıma yardımcı olur, dokunma duyusunu algılar.",
+    "goz": "<b>Anatomi - Göz:</b> Işığı odaklayarak görmeyi sağlayan duyu organıdır. Sert tabaka, damar tabaka ve ağ tabaka (retina) olmak üzere üç katmandan oluşur.",
+    "kulak": "<b>Anatomi - Kulak:</b> İşitme ve denge organıdır. Dış kulak, orta kulak ve iç kulak olmak üzere üç kısımdan oluşur, iç kulaktaki yarım daire kanalları dengeyi sağlar.",
+    "ince_bagirsak": "<b>Anatomi - İnce Bağırsak:</b> Sindirim sisteminde besinlerin kimyasal sindiriminin tamamlandığı ve emilerek kana geçtiği, villus adı verilen kıvrımlara sahip organdır.",
+    "kalin_bagirsak": "<b>Anatomi - Kalın Bağırsak:</b> Sindirilmeyen besin atıklarındaki su, vitamin ve minerallerin geri emilimini gerçekleştiren, sindirim sisteminin son kısımlarından biridir.",
+    "akyuvar": "<b>Anatomi - Akyuvarlar (Lökositler):</b> Vücudu mikroplara, virüslere ve enfeksiyonlara karşı koruyan, bağışıklık sisteminin temel taşı olan beyaz kan hücreleridir.",
+    "alyuvar": "<b>Anatomi - Alyuvarlar (Eritrositler):</b> İçerdiği hemoglobin sayesinde akciğerlerden aldığı oksijeni dokulara, dokulardaki karbondioksiti ise akciğerlere taşıyan kırmızı kan hücreleridir."
 
 # ⚡ FİZİK VE GEOMETRİ VERİ TABANI
 
@@ -1189,6 +1360,21 @@ physics_geometry_database = {
     "pisagor teoremi": "<b>Geometri - Pisagor Teoremi:</b> Dik üçgende hipotenüsün karesi, diğer iki kenarın karelerinin toplamına eşittir: $a^2 + b^2 = c^2$.",
     "hacim": "<b>Geometri - Hacim:</b> Bir cismin uzayda kapladığı yerin ölçüsüdür. Küpün hacmi $V = a^3$, dikdörtgenler prizmasının hacmi $V = a \\cdot b \\cdot c$ formülüyle bulunur."
 }
+        "kaldirma_kuvveti": "<b>Fizik - Kaldırma Kuvveti:</b> Sıvı veya gaz içindeki bir cisme, yerini değiştirdiği akışkanın ağırlığına eşit miktarda uygulanan yukarı yönlü kuvvettir. Arşimet tarafından keşfedilmiştir.",
+    "is": "<b>Fizik - İş (W):</b> Bir kuvvete maruz kalan cismin kuvvet doğrultusunda yer değiştirmesidir. Formülü: $W = F \\cdot \\Delta x$ şeklindedir, birimi Joule (J)'dür.",
+    "güç": "<b>Fizik - Güç (P):</b> Birim zamanda yapılan iş miktarıdır. Formülü: $P = W / t$ şeklindedir, birimi Watt (W)'tır.",
+    "kütle_ve_agirlik": "<b>Fizik - Kütle ve Ağırlık:</b> Kütle (m) değişmeyen madde miktarı olup skalerdir; ağırlık (G) ise kütleye etki eden yerçekimi kuvvetidir ($G=m \\cdot g$) ve vektöreldir.",
+    "özgül_kütle": "<b>Fizik - Özgül Kütle (Yoğunluk):</b> Birim hacimdeki madde miktarıdır. Maddeler için ayırt edici bir özelliktir. Formülü: $d = m / v$ şeklindedir.",
+    "potansiyel_enerji": "<b>Fizik - Potansiyel Enerji:</b> Cismin konumundan veya durumundan dolayı sahip olduğu enerjidir. Yerçekimi potansiyel enerji formülü: $E_p = m \\cdot g \\cdot h$'tır.",
+    "kinetik_enerji": "<b>Fizik - Kinetik Enerji:</b> Hareket halindeki bir cismin hızından dolayı sahip olduğu enerjidir. Formülü: $E_k = \\frac{1}{2} m \\cdot v^2$ şeklindedir.",
+    "ses_hizi": "<b>Fizik - Ses Hızı:</b> Ses dalgalarının bir ortamda yayılma hızıdır. Ortamın yoğunluğu arttıkça artar (katılarda en hızlı, gazlarda en yavaştır).",
+    "isik_hizi": "<b>Fizik - Işık Hızı:</b> Işığın boşluktaki yayılma hızıdır ve evrensel bir sabittir ($c \\approx 3 \\cdot 10^8 m/s$).",
+    "paralelkenar": "<b>Geometri - Paralelkenar:</b> Karşılıklı kenarları eşit ve paralel olan dörtgendir. Karşılıklı açıları eşittir, alanı taban ile o tabana ait yüksekliğin çarpımıdır ($A = a \\cdot h$).",
+    "yamuk": "<b>Geometri - Yamuk:</b> En az iki kenarı birbirine paralel olan dörtgendir. Alanı, alt ve üst taban toplamının yarısı ile yüksekliğin çarpımıdır ($A = \\frac{a+c}{2} \\cdot h$).",
+    "çember": "<b>Geometri - Çember:</b> Düzlemde sabit bir noktaya eşit uzaklıkta bulunan noktaların oluşturduğu içi boş eğridir. İçi dolu olan daireden farkı sadece çevresinin ($2\\pi r$) olmasıdır.",
+    "silindir": "<b>Geometri - Silindir:</b> Alt ve üst tabanı birbirine eş iki daireden oluşan geometrik cisimdir. Hacmi: $V = \\pi r^2 \\cdot h$, yanal alanı: $2\\pi r \\cdot h$ formülüyle bulunur.",
+    "koni": "<b>Geometri - Koni:</b> Dairesel bir taban ve bu taban düzleminin dışındaki bir tepe noktasını birleştiren doğruların oluşturduğu cisimdir. Hacmi: $V = \\frac{1}{3} \\pi r^2 \\cdot h$'tır.",
+    "küre": "<b>Geometri - Küre:</b> Uzayda sabit bir noktadan eşit uzaklıktaki noktaların oluşturduğu üç boyutlu geometrik şekildir. Hacmi $V = \\frac{4}{3} \\pi r^3$, yüzey alanı $A = 4\\pi r^2$ formülüyle bulunur."
 
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
 GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi", "hello", "selaminaleykum", "aleykumselam", "gunaydin", "iyi gunler", "iyi aksamlar"]
