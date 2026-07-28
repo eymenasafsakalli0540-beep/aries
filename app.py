@@ -1036,7 +1036,7 @@ world_countries = {
     "bulgaristan": {"b": "Sofya", "k": "Avrupa", "lat": 42.70, "lon": 23.32, "bilgi": "Balkanlar'da yer alan, Türkiye'nin komşusu olan bir ülkedir."},
     "sirbistan": {"b": "Belgrad", "k": "Avrupa", "lat": 44.79, "lon": 20.45, "bilgi": "Balkanlar'ın merkezinde yer alan, denize kıyısı olmayan bir ülkedir."},
     "kibris": {"b": "Lefkoşa", "k": "Asya/Avrupa", "lat": 35.19, "lon": 33.38, "bilgi": "Akdeniz'in doğusunda yer alan bir ada ülkesidir."},
-
+    "almanya:{"b": "berlın", "k": "avrupa", "lat": 52.52, "lon": 13.40, "bilgi": "Avrupa'nın en büyük ekonomisine sahip, sanayisi ve teknolojisiyle lider bir ülkedir."
     # Asya
     "japonya": {"b": "Tokyo", "k": "Asya", "lat": 35.68, "lon": 139.69, "bilgi": "Pasifik Okyanusu'nda yer alan, teknolojisiyle bilinen bir ada ülkesidir."},
     "cin": {"b": "Pekin", "k": "Asya", "lat": 39.90, "lon": 116.41, "bilgi": "Nüfus bakımından dünyanın en kalabalık ülkelerinden biridir."},
