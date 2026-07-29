@@ -1036,11 +1036,7 @@ world_countries = {
     "bulgaristan": {"b": "Sofya", "k": "Avrupa", "lat": 42.70, "lon": 23.32, "bilgi": "Balkanlar'da yer alan, Türkiye'nin komşusu olan bir ülkedir."},
     "sirbistan": {"b": "Belgrad", "k": "Avrupa", "lat": 44.79, "lon": 20.45, "bilgi": "Balkanlar'ın merkezinde yer alan, denize kıyısı olmayan bir ülkedir."},
     "kibris": {"b": "Lefkoşa", "k": "Asya/Avrupa", "lat": 35.19, "lon": 33.38, "bilgi": "Akdeniz'in doğusunda yer alan bir ada ülkesidir."},
-    "almanya:{"b": "berlın", "k": "avrupa", "lat": 52.52, "lon": 13.40, "bilgi": "Avrupa'nın en büyük ekonomisine sahip, sanayisi ve teknolojisiyle lider bir ülkedir."
-    "Fransa:{"b": "paris", "k": "avrupa", "lat": 48.85, "lon": 02.35, "bilgi": "Moda, mutfak sanatı, zengin tarihi ve Eyfel Kulesi gibi ikonik yapılarıyla tanınan bir ülkedir."
-    "birleşik krallık:{"b": "londra", "k": "avrupa", "lat": 51.50, "lon": -00.12, "bilgi": "Büyük Britanya adasında yer alan, küresel finans ve kültür merkezi olan bir krallıktır."
-    "rusya:{"b": "moskova", "k": "avrupa/asya", "lat": 55.75, "lon": 37.71, "bilgi": "Topraklarının bir kısmı Avrupa'da olan, yüzölçümü bakımından dünyanın en büyük ülkesidir."
-    "türkiye:{"b": "ankara", "k": "avrupa/asya", "lat": 39.93, "lon": 32.85, "bilgi": "Asya ve Avrupa'yı birbirine bağlayan, köklü tarihi ve stratejik konumuyla bilinen bir ülkedir."
+    "birleşik krallık:{"b": "londra", "k": "avrupa", "lat": 51.50, "lon": -00.12, "bilgi": "Büyük Britanya adasında yer alan, küresel finans ve kültür merkezi olan bir krallıktır.
     "slovakya": {"b": "Bratislava", "k": "Avrupa", "lat": 48.14, "lon": 17.10, "bilgi": "Orta Avrupa'da yer alan, kaleleri ve kişi başına düşen otomobil üretimiyle ünlü bir ülkedir."},
     "hirvatistan": {"b": "Zagreb", "k": "Avrupa", "lat": 45.81, "lon": 15.97, "bilgi": "Adriyatik Denizi kıyısında uzun bir sahili ve binlerce adası bulunan bir Balkan ülkesidir."},
     "bosna_hersek": {"b": "Saraybosna", "k": "Avrupa", "lat": 43.85, "lon": 18.41, "bilgi": "Balkanlar'da yer alan, çok kültürlü yapısı ve tarihi Mostar Köprüsü ile tanınan bir ülkedir."},
@@ -1153,7 +1149,6 @@ world_countries = {
     "sili": {"b": "Santiago", "k": "Güney Amerika", "lat": -33.45, "lon": -70.65, "bilgi": "And Dağları boyunca uzanan, ince ve uzun şekliyle bilinen bir Güney Amerika ülkesidir."},
     "meksika": {"b": "Meksiko", "k": "Kuzey Amerika", "lat": 19.43, "lon": -99.13, "bilgi": "Kuzey Amerika'nın güneyinde yer alan, Aztek ve Maya mirasına sahip bir ülkedir."},
     "kanada": {"b": "Ottava", "k": "Kuzey Amerika", "lat": 45.42, "lon": -75.70, "bilgi": "Yüzölçümü bakımından dünyanın en büyük ikinci ülkesidir."},
-        "abd": {"b": "Washington D.C.", "k": "Kuzey Amerika", "lat": 38.90, "lon": -77.03, "bilgi": "Kuzey Amerika'da yer alan, küresel ekonomik ve askeri etkiye sahip 50 eyaletten oluşan bir ülkedir."},
     "kolombiya": {"b": "Bogota", "k": "Güney Amerika", "lat": 4.71, "lon": -74.07, "bilgi": "Güney Amerika'nın kuzeyinde yer alan, kahve üretimi ve zengin biyolojik çeşitliliğiyle bilinen bir ülkedir."},
     "peru": {"b": "Lima", "k": "Güney Amerika", "lat": -12.04, "lon": -77.03, "bilgi": "İnka İmparatorluğu'nun merkezi olan, dünyaca ünlü Machu Picchu antik kentine ev sahipliği yapan ülkedir."},
     "venezuela": {"b": "Karakas", "k": "Güney Amerika", "lat": 10.48, "lon": -66.90, "bilgi": "Güney Amerika'nın kuzey kıyısında yer alan, dünyanın en büyük kanıtlanmış petrol rezervlerine sahip ülkesidir."},
@@ -1163,7 +1158,6 @@ world_countries = {
     "uruguay": {"b": "Montevideo", "k": "Güney Amerika", "lat": -34.90, "lon": -56.16, "bilgi": "Yüksek yaşam standartları, plajları ve ilerici sosyal politikalarıyla tanınan küçük bir Güney Amerika ülkesidir."},
     "guyana": {"b": "Georgetown", "k": "Güney Amerika", "lat": 6.80, "lon": -58.15, "bilgi": "Karayip kültürüyle güçlü bağları olan, sık yağmur ormanları ve İngilizce resmi diliyle bilinen Güney Amerika ülkesidir."},
     "surinam": {"b": "Paramaribo", "k": "Güney Amerika", "lat": 5.85, "lon": -55.20, "bilgi": "Yüzölçümü ve nüfus bakımından Güney Amerika'nın en küçük bağımsız ülkesidir, resmi dili Felemenkçedir."},
-    "kuba": {"b": "Havana", "k": "Kuzey Amerika", "lat": 23.11, "lon": -82.36, "bilgi": "Karayipler'de yer alan, puroları, klasik arabaları, müziği ve sosyalist geçmişiyle ünlü bir ada ülkesidir."},
     "dominik_cumhuriyeti": {"b": "Santo Domingo", "k": "Kuzey Amerika", "lat": 18.48, "lon": -69.93, "bilgi": "Karayipler'deki Hispanyola adasında yer alan, beyaz kumlu plajları ve tatil köyleriyle ünlü turistik bir ülkedir."},
     "haiti": {"b": "Port-au-Prince", "k": "Kuzey Amerika", "lat": 18.53, "lon": -72.33, "bilgi": "Hispanyola adasının batısında yer alan, tarihte köle isyanıyla bağımsızlığını kazanan ilk siyahi cumhuriyettir."},
     "jamaika": {"b": "Kingston", "k": "Kuzey Amerika", "lat": 17.97, "lon": -76.79, "bilgi": "Karayipler'de yer alan, reggae müziğinin doğduğu yer ve dünyaca ünlü atletleriyle tanınan bir ada ülkesidir."},
