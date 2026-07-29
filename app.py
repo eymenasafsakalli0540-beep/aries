@@ -1084,7 +1084,7 @@ world_countries = {
     "malezya": {"b": "Kuala Lumpur", "k": "Asya", "lat": 3.14, "lon": 101.69, "bilgi": "Yağmur ormanları ve hareketli başkentindeki ikiz kuleleriyle tanınan bir ülkedir."},
     "singapur": {"b": "Singapur", "k": "Asya", "lat": 1.35, "lon": 103.82, "bilgi": "Güneydoğu Asya'da, küresel bir finans merkezi olan gelişmiş bir ada şehir devletidir."},
     "afganistan": {"b": "Kabil", "k": "Asya", "lat": 34.53, "lon": 69.17, "bilgi": "Güney ve Orta Asya'nın kavşağında yer alan, dağlık ve köklü geçmişe sahip bir ülkedir."},
-          "turkmenıstan": {"b": "Aşkabat", "k": "Asya", "lat": 37.96, "lon": 58.38, "bilgi": "Orta Asya'da yer alan, Karakum Çölü ve mermer mimarili başkentiyle tanınan bir ülkedir."},
+    "turkmenıstan": {"b": "Aşkabat", "k": "Asya", "lat": 37.96, "lon": 58.38, "bilgi": "Orta Asya'da yer alan, Karakum Çölü ve mermer mimarili başkentiyle tanınan bir ülkedir."},
     "kirgizistan": {"b": "Bişkek", "k": "Asya", "lat": 42.87, "lon": 74.59, "bilgi": "Orta Asya'da yer alan, Tanrı Dağları ve göçebe kültürü mirasıyla bilinen dağlık bir ülkedir."},
     "tacikistan": {"b": "Duşanbe", "k": "Asya", "lat": 38.56, "lon": 68.78, "bilgi": "Orta Asya'da yer alan, Pamir Dağları ile çevrili denize kıyısı olmayan dağlık bir ülkedir."},
     "mogolistan": {"b": "Ulanbatur", "k": "Asya", "lat": 47.88, "lon": 106.89, "bilgi": "Rusya ve Çin arasında yer alan, uçsuz bucaksız bozkırları ve göçebe yaşam tarzıyla ünlü bir ülkedir."},
