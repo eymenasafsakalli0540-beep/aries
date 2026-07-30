@@ -1110,7 +1110,7 @@ world_countries = {
     "guney afrika": {"b": "Pretoria", "k": "Afrika", "lat": -25.75, "lon": 28.19, "bilgi": "Afrika kıtasının en güneyinde yer alan, üç başkenti olan bir ülkedir."},
     "kenya": {"b": "Nairobi", "k": "Afrika", "lat": -1.29, "lon": 36.82, "bilgi": "Doğu Afrika'da yer alan, safari turizmiyle bilinen bir ülkedir."},
     "etiyopya": {"b": "Addis Ababa", "k": "Afrika", "lat": 9.03, "lon": 38.74, "bilgi": "Doğu Afrika'da yer alan, hiç sömürge olmamış nadir Afrika ülkelerinden biridir."},
-        "somali": {"b": "Mogadişu", "k": "Afrika", "lat": 2.04, "lon": 45.34, "bilgi": "Afrika Boynuzu'nda yer alan, kıtanın en uzun kıyı şeridine sahip stratejik bir ülkesidir."},
+    "somali": {"b": "Mogadişu", "k": "Afrika", "lat": 2.04, "lon": 45.34, "bilgi": "Afrika Boynuzu'nda yer alan, kıtanın en uzun kıyı şeridine sahip stratejik bir ülkesidir."},
     "sudan_guney": {"b": "Cuba", "k": "Afrika", "lat": 4.85, "lon": 31.60, "bilgi": "2011 yılında Sudan'dan ayrılarak kurulan, dünyanın en genç bağımsız ülkesidir."},
     "mali": {"b": "Bamako", "k": "Afrika", "lat": 12.63, "lon": -8.00, "bilgi": "Batı Afrika'da yer alan, tarihi Timbuktu şehri ve antik ticaret yollarıyla bilinen bir ülkedir."},
     "nijer": {"b": "Niamey", "k": "Afrika", "lat": 13.51, "lon": 2.11, "bilgi": "Batı Afrika'da denize kıyısı olmayan, büyük bölümü Sahra Çölü ile kaplı bir ülkedir."},
@@ -1169,8 +1169,7 @@ world_countries = {
     # Okyanusya
     "avustralya": {"b": "Kanberra", "k": "Okyanusya", "lat": -35.28, "lon": 149.13, "bilgi": "Hem kıta hem ülke olan, kendine özgü hayvan türleriyle bilinen bir ülkedir."},
     "yeni zelanda": {"b": "Wellington", "k": "Okyanusya", "lat": -41.29, "lon": 174.78, "bilgi": "Pasifik Okyanusu'nda yer alan, doğal manzaralarıyla ünlü bir ada ülkesidir."}
-}
-        "papua_yeni_gine": {"b": "Port Moresby", "k": "Okyanusya", "lat": -9.44, "lon": 147.18, "bilgi": "Kültürel ve dilsel çeşitliliğiyle bilinen, yüzlerce yerli kabileye ev sahipliği yapan büyük bir ada ülkesidir."},
+    "papua_yeni_gine": {"b": "Port Moresby", "k": "Okyanusya", "lat": -9.44, "lon": 147.18, "bilgi": "Kültürel ve dilsel çeşitliliğiyle bilinen, yüzlerce yerli kabileye ev sahipliği yapan büyük bir ada ülkesidir."},
     "fiji": {"b": "Suva", "k": "Okyanusya", "lat": -18.12, "lon": 178.45, "bilgi": "Melanezya bölgesinde yer alan, mercan resifleri ve tropikal plajlarıyla ünlü turistik bir ada ülkesidir."},
     "samoa": {"b": "Apia", "k": "Okyanusya", "lat": -13.83, "lon": -171.75, "bilgi": "Polinezya'nın merkezinde yer alan, geleneksel yaşam tarzı ve volkanik adalarıyla tanınan bir ülkedir."},
     "solomon_adalari": {"b": "Honiara", "k": "Okyanusya", "lat": -9.43, "lon": 159.95, "bilgi": "Papua Yeni Gine'nin doğusunda yer alan, dalış noktaları ve II. Dünya Savaşı batıklarıyla ünlü bir takımada ülkesidir."},
@@ -1208,7 +1207,7 @@ historical_events = {
     "niğbolu savasi": "<b>1396 - Niğbolu Savaşı:</b> Yıldırım Bayezid'in Haçlı ordusunu büyük bir bozguna uğratarak 'Sultan-ı İklim-i Rum' unvanını aldığı savaştır.",
     "ridaniye savasi": "<b>1517 - Ridaniye Savaşı:</b> Yavuz Sultan Selim'in Memlükleri yıkarak halifeliği Osmanlı Hanedanı'na geçirdiği ve Baharat Yolu'nu kontrol altına aldığı savaştır.",
     "inebahti deniz savasi": "<b>1571 - İnebahtı Deniz Savaşı:</b> Osmanlı donanmasının Haçlı ittifakı karşısında aldığı ve Akdeniz'deki yenilmezlik mitini sarsan ilk büyük deniz mağlubiyetidir.",
-    "pruet savasi": "<b>1711 - Prut Savaşı:</b> Baltacı Mehmed Paşa komutasındaki Osmanlı ordusunun Rus Çarı I. Petro'yu kuşatarak büyük bir diplomatik ve askeri başarı kazandığı savaştır."},
+    "pruet savasi": "<b>1711 - Prut Savaşı:</b> Baltacı Mehmed Paşa komutasındaki Osmanlı ordusunun Rus Çarı I. Petro'yu kuşatarak büyük bir diplomatik ve askeri başarı kazandığı savaştır.",
     "pasarofca antlasmasi": "<b>1718 - Pasarofça Antlaşması:</b> Osmanlı'da Batı'nın üstünlüğünün kabul edildiği ve zevk, sefa, modernleşme dönemi olan Lale Devri'ni başlatan antlaşmadır.",
     "kucuk kaynarca": "<b>1774 - Küçük Kaynarca Antlaşması:</b> Kırım'ın kaybedildiği ve Osmanlı'nın ilk kez Müslüman bir topraktan vazgeçmek zorunda kaldığı ağır antlaşmadır.",
     "yeniceri ocaginin kaldirilishi": "<b>1826 - Vaka-i Hayriye:</b> Sultan II. Mahmud tarafından Yeniçeri Ocağı'nın kaldırılarak yerine modern 'Asakir-i Mansure-i Muhammediye' ordusunun kurulmasıdır.",
@@ -1251,8 +1250,7 @@ historical_events = {
     "ikinci dunya savasi": "<b>1939-1945 - İkinci Dünya Savaşı:</b> Mihver ve Müttefik Devletler arasında geçen, tarihin en yıkıcı ve en çok can kaybına yol açan küresel savaşıdır.",
     "sovyetler birliginin dagilmasi": "<b>1991 - Sovyetler Birliği'nin Dağılması:</b> SSCB'nin 15 bağımsız devlete bölünmesiyle Soğuk Savaş döneminin sona ermesidir.",
     "berlin duvarinin yikilisi": "<b>1989 - Berlin Duvarı'nın Yıkılışı:</b> Doğu ve Batı Almanya'yı ayıran duvarın yıkılması, Soğuk Savaş'ın sembolik sonu ve Almanya'nın birleşme sürecinin başlangıcıdır.",
-    "aya ilk inis": "<b>1969 - Ay'a İlk İniş:</b> NASA'nın Apollo 11 görevi ile Neil Armstrong ve Buzz Aldrin, insanlık tarihinde ilk kez Ay yüzeyine ayak bastı."
-}
+    "aya ilk inis": "<b>1969 - Ay'a İlk İniş:</b> NASA'nın Apollo 11 görevi ile Neil Armstrong ve Buzz Aldrin, insanlık tarihinde ilk kez Ay yüzeyine ayak bastı.",
     "coğrafi kesifler": "<b>15-17. yüzyıl - Coğrafi Keşifler:</b> Avrupalı gemicilerin yeni ticaret yolları ve kıtalar bulmasıyla dünyanın ekonomik dengesini tamamen değiştiren süreçtir.",
     "otuz yil savaslari": "<b>1618-1648 - Otuz Yıl Savaşları:</b> Avrupa'da mezhep odaklı başlayan, Westphalia Antlaşması ile ulus devlet modelinin ve modern diplomasinin temelini atan küresel savaştır.",
     "bolsevik ihtilali": "<b>1917 - Bolşevik İhtilali (Ekim Devrimi):</b> Rusya'da Çarlık rejiminin yıkılarak Lenin liderliğinde dünyadaki ilk sosyalist devletin (SSCB) kurulması sürecidir.",
