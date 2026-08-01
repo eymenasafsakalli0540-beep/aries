@@ -29,11 +29,7 @@ except ImportError:
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
 
-# 🕒 KALICI OTURUM (EKLENTİ) — varsayılanda Flask oturumu tarayıcı kapanınca
-# siliniyordu, bu yüzden Google ile giriş yapan kullanıcılar her seferinde
-# tekrar giriş yapmak zorunda kalıyordu. Artık oturumlar 30 gün boyunca
-# tarayıcıda kalıcı olarak saklanıyor; kullanıcı ne zaman geri gelse (kendi
-# çıkış yapmadığı sürece) hâlâ giriş yapmış olarak karşılanıyor.
+# 🕒 KALICI OTURUM (EKLENTİ)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 
@@ -44,15 +40,10 @@ def _make_session_permanent():
 # --------------------------------------------------------------------------
 # 🔑 GOOGLE İLE GİRİŞ + GİRİŞ YAPMAYANLARA MESAJ SINIRI (EKLENTİ)
 # --------------------------------------------------------------------------
-# GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET boşsa (henüz ayarlanmadıysa) Google
-# girişi tamamen devre dışı kalır ve ARIES eskisi gibi sınırsız çalışır —
-# yani bu ekleme, sen Render'da bu değerleri girene kadar hiçbir şeyi bozmaz.
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_LOGIN_ENABLED = OAUTH_AVAILABLE and bool(GOOGLE_CLIENT_ID) and bool(GOOGLE_CLIENT_SECRET)
 
-# 💬 Giriş yapmamış (misafir) kullanıcılar için mesaj sınırı. Bu sayıyı
-# istediğin zaman tek satırda değiştirebilirsin.
 GUEST_MESSAGE_LIMIT = 15
 
 oauth = None
@@ -81,13 +72,12 @@ def login_google_callback():
         return jsonify({"success": False, "error": "Google girişi ayarlanmamış."}), 503
     token = oauth.google.authorize_access_token()
     user_info = token.get('userinfo', {})
-    # ✅ Giriş yapan kullanıcıyı session'a kaydet — artık mesaj sınırı yok
     session['google_user'] = {
         "email": user_info.get("email", ""),
         "name": user_info.get("name", ""),
         "picture": user_info.get("picture", ""),
     }
-    session['guest_message_count'] = 0  # giriş yapınca sayaç sıfırlanır
+    session['guest_message_count'] = 0
     return redirect(request.url_root.rstrip('/') + '/')
 
 
@@ -99,7 +89,6 @@ def logout_google():
 
 @app.route('/api/auth-status')
 def auth_status():
-    """Frontend'in giriş durumunu ve kalan mesaj hakkını sorgulaması için (EKLENTİ)."""
     user = session.get('google_user')
     return jsonify({
         "logged_in": bool(user),
@@ -112,21 +101,8 @@ def auth_status():
 # --------------------------------------------------------------------------
 # 🖥️ BİLGİSAYAR AJANI ALTYAPISI (EKLENTİ) — SINIRLI VE KONTROLLÜ
 # --------------------------------------------------------------------------
-# Aries sohbette "chrome'u kapat" gibi bir ifade yakalarsa, bunu rastgele bir
-# komut olarak ÇALIŞTIRMAZ — sadece önceden izin verilmiş (whitelist) bir
-# uygulama adıysa, bir komut kuyruğuna yazar. Bilgisayarındaki ayrı bir
-# `agent.py` programı bu kuyruğu periyodik olarak kontrol eder (polling) ve
-# KENDİ whitelist'inde de varsa uygulamayı kapatır. Sunucu asla bilgisayarına
-# doğrudan bağlanmaz; bağlantıyı her zaman senin bilgisayarındaki agent.py
-# başlatır. Bu, güvenlik açısından önemli bir tercihtir.
-#
-# AGENT_SECRET, panel şifresinden (4235) FARKLI ve uzun/rastgele olmalı —
-# çünkü bu anahtarı bilen biri bilgisayarına komut gönderebilir. Render'da
-# ortam değişkeni olarak ayarla: AGENT_SECRET=<uzun-rastgele-bir-anahtar>
 AGENT_SECRET = os.environ.get("AGENT_SECRET", "")
 
-# Sunucu tarafı whitelist: hangi uygulama isimlerinin/eş anlamlılarının hangi
-# process adına karşılık geldiği. Buradaki liste dışında HİÇBİR şey kabul edilmez.
 APP_CLOSE_WHITELIST = {
     "chrome": "chrome.exe",
     "google chrome": "chrome.exe",
@@ -142,11 +118,8 @@ APP_CLOSE_WHITELIST = {
     "excel": "EXCEL.EXE",
 }
 
-# Bekleyen ajan komutları (basit in-memory kuyruk). Ajan bunu çekip
-# uyguladıktan sonra kuyruk temizlenir.
 pending_agent_commands = []
 
-# Bir mesajda "<uygulama> kapat/kapatir misin/kapatabilir misin" kalıbını yakalar
 APP_CLOSE_PATTERN = re.compile(
     r'\b([a-zçğıöşü ]{2,20}?)\s*(?:yi|yı|i|ı|u|ü)?\s*kapat',
     re.IGNORECASE
@@ -154,9 +127,6 @@ APP_CLOSE_PATTERN = re.compile(
 
 
 def try_queue_app_close_command(norm_msg, raw_message):
-    """Mesajda 'X'i kapat' kalıbı varsa ve X whitelist'teyse, komutu kuyruğa
-    ekler ve kullanıcıya gösterilecek onay mesajını döner. Eşleşme yoksa
-    veya uygulama whitelist'te değilse None döner (ARIES normal akışına devam eder)."""
     match = APP_CLOSE_PATTERN.search(norm_msg)
     if not match:
         return None
@@ -172,19 +142,11 @@ def try_queue_app_close_command(norm_msg, raw_message):
     return f"🖥️ Tamam, <b>{app_name_raw}</b> kapatılıyor... (bilgisayarındaki ajan programı bir sonraki kontrolünde bunu uygulayacak)"
 
 # --------------------------------------------------------------------------
-# 🛠️ BAKIM MODU (EKLENTİ — mevcut koda dokunmadan eklendi)
+# 🛠️ BAKIM MODU (EKLENTİ)
 # --------------------------------------------------------------------------
-# MAINTENANCE_MODE True olduğunda ARIES tamamen durur: /ask endpoint'i
-# hiçbir kural tabanlı motoru (matematik, coğrafya, tarih, fen, AI fallback vb.)
-# çalıştırmadan direkt aşağıdaki sabit mesajı döner. Kontrol panelinden
-# /api/get-logs üzerinden 'maintenance' ve 'resume' action'larıyla açılıp kapanır.
 MAINTENANCE_MODE = False
 MAINTENANCE_MESSAGE = "Şu an bakım arasındayız."
 
-# 💾 KALICI BAKIM DURUMU (EKLENTİ) — Render gibi platformlarda sunucu belli
-# süre istek almayınca uykuya dalıp sonra sıfırdan yeniden başlayabilir; bu
-# durumda bellekteki MAINTENANCE_MODE değişkeni sıfırlanır. Bunu önlemek için
-# durumu küçük bir dosyaya da yazıyoruz ve başlangıçta oradan okuyoruz.
 MAINTENANCE_FILE = "maintenance.flag"
 
 
@@ -201,37 +163,12 @@ def _save_maintenance_state(is_on):
             os.remove(MAINTENANCE_FILE)
 
 
-# --------------------------------------------------------------------------
-# 🔒 GERÇEKTEN KALICI BAKIM DURUMU — RENDER ORTAM DEĞİŞKENİ (EKLENTİ)
-# --------------------------------------------------------------------------
-# Yerel dosya (maintenance.flag), Render'ın container'ı tamamen sıfırdan
-# yeniden başlattığı durumlarda (deploy, çökme, platform bakımı vb.) silinip
-# gidebilir. Bunu %100 garantiye almak için durumu Render'ın KENDİ ortam
-# değişkeni sisteminde de tutuyoruz — çünkü ortam değişkenleri container ne
-# kadar sıfırdan açılırsa açılsın HER ZAMAN aynı kalır, sadece biz (veya sen)
-# değiştirene kadar.
-#
-# NASIL ÇALIŞIR: 'maintenance'/'resume' action'ı tetiklendiğinde, Render'ın
-# API'sine bir istek atıp ARIES_MAINTENANCE ortam değişkenini "1" veya "0"
-# yapıyoruz. Render bu değişikliği fark edince otomatik olarak servisi kısa
-# bir süreliğine (1-2 dakika) yeniden başlatıyor — bu normal ve beklenen bir
-# davranıştır, endişelenme.
-#
-# KURULUM (senin yapman gereken):
-#   1) https://dashboard.render.com/u/settings#api-keys adresinden yeni bir
-#      API anahtarı oluştur ("Create API Key").
-#   2) Render'da bu servisin "Environment" sekmesine gidip RENDER_API_KEY
-#      adında yeni bir ortam değişkeni ekle, değerine o anahtarı yapıştır.
-#   3) Aşağıdaki anahtar boşsa (RENDER_API_KEY yoksa) hiçbir şey bozulmaz;
-#      sistem sessizce sadece yerel dosya yöntemine (maintenance.flag) döner.
 RENDER_API_KEY = os.environ.get("RENDER_API_KEY", "")
 RENDER_SERVICE_ID = os.environ.get("RENDER_SERVICE_ID", "srv-d8pfgaj7uimc73a5i2eg")
 ARIES_MAINTENANCE_ENV_KEY = "ARIES_MAINTENANCE"
 
 
 def _set_render_env_maintenance(is_on):
-    """Render API üzerinden ARIES_MAINTENANCE ortam değişkenini günceller.
-    RENDER_API_KEY tanımlı değilse sessizce hiçbir şey yapmaz (hata vermez)."""
     if not RENDER_API_KEY:
         return False
     try:
@@ -250,8 +187,6 @@ def _set_render_env_maintenance(is_on):
         return False
 
 
-# Başlangıçta önce Render ortam değişkenine bak (en güvenilir kaynak),
-# yoksa yerel dosyaya, o da yoksa varsayılan olarak kapalı (False) kabul et.
 _env_maintenance = os.environ.get(ARIES_MAINTENANCE_ENV_KEY, "")
 if _env_maintenance in ("1", "true", "True"):
     MAINTENANCE_MODE = True
@@ -261,11 +196,6 @@ else:
     MAINTENANCE_MODE = _load_maintenance_state()
 
 
-# 🌐 GENEL CORS DESTEĞİ (EKLENTİ) — panel farklı bir adresten (origin) barındırılıyorsa
-# tarayıcı istekleri CORS koruması yüzünden engelleyebilir. Bu kural, hangi
-# endpoint'ten dönerse dönsün her cevaba otomatik olarak izin başlığı ekler,
-# böylece /ask içindeki onlarca farklı cevap noktasının her birini tek tek
-# değiştirmeye gerek kalmaz.
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -274,33 +204,14 @@ def add_cors_headers(response):
     return response
 
 # --------------------------------------------------------------------------
-# 🤖 GELİŞMİŞ YAPAY ZEKA DESTEĞİ (OPSİYONEL — "daha akıllı" cevaplar için)
+# 🤖 GELİŞMİŞ YAPAY ZEKA DESTEĞİ
 # --------------------------------------------------------------------------
-# ARIES aşağıdaki kural tabanlı sistemde (matematik, coğrafya, tarih, fen vb.)
-# bir eşleşme BULAMAZSA, buraya bir API anahtarı girersen o soruyu gerçek bir
-# yapay zeka modeline sorup daha akıllı/geniş kapsamlı bir cevap üretir.
-# Anahtar boş bırakılırsa hiçbir şey değişmez, mevcut kural tabanlı sistem
-# aynen çalışmaya devam eder (kod bozulmaz, sessizce devre dışı kalır).
-#
-# NASIL KULLANILIR:
-#   1) Aşağıya kendi API anahtarınızı yazın (ya da ortam değişkeni olarak verin).
-#   2) AI_API_PROVIDER'ı "openai", "anthropic" veya "gemini" olarak seçin.
-#   3) Sunucuyu başlatın — artık ARIES bilmediği soruları da cevaplayabilir.
-AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()  # <-- Render'da "AI_API_KEY" adında ortam değişkeni olarak girin
-AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", "gemini").strip().lower()  # "openai", "anthropic" veya "gemini"
+AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
+AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", "gemini").strip().lower()
 AI_MODEL_OPENAI = "gpt-4o-mini"
 AI_MODEL_ANTHROPIC = "claude-3-5-haiku-20241022"
-# ⚠️ ÖNEMLİ DÜZELTME: "gemini-2.0-flash" Google tarafından 1 Haziran 2026'da
-# tamamen kapatıldı (deprecated/shutdown) — bu yüzden AI_API_KEY doğru olsa
-# bile her istek sessizce 404 alıp boş dönüyordu. "gemini-2.5-flash" ile
-# değiştirildi (güncel, kararlı/GA model).
 AI_MODEL_GEMINI = "gemini-2.5-flash"
 
-# 🧠 AKILLI SAĞLAYICI TESPİTİ (EKLENTİ) — bazen AI_API_PROVIDER yanlış/eksik
-# ayarlanıyor (örn. OpenAI anahtarı girilip provider "gemini" bırakılıyor).
-# Anahtarın biçimine bakarak hangi sağlayıcıya ait olduğunu otomatik anlarız;
-# bu şekilde yanlış eşleşmeden kaynaklanan "anahtar çalışmıyor" sorunları
-# kendiliğinden düzelir.
 if AI_API_KEY:
     if AI_API_KEY.startswith("sk-ant-"):
         AI_API_PROVIDER = "anthropic"
@@ -311,19 +222,14 @@ if AI_API_KEY:
 
 
 def ask_ai_fallback(user_text, buddy_mode=False, history=None):
-    """Kural tabanlı sistem cevap bulamadığında çağrılır. AI_API_KEY boşsa None döner
-    ve ARIES normal 'bulamadım' cevabını verir. Anahtar varsa gerçek bir modele sorar.
-    'history' verilirse (önceki mesajlar), AI bu bağlamı da göz önünde bulundurur —
-    böylece kullanıcı önceki soruya atıfta bulunsa bile (örn. 'peki ya bu?') anlar."""
+    """Kural tabanlı sistem cevap bulamadığında çağrılır."""
     if not AI_API_KEY:
         return None
 
-    history = history or []  # 🧠 KONUŞMA HAFIZASI (EKLENTİ) — [{"role": "user"/"assistant", "content": "..."}]
+    history = history or []
 
-    # 🧠 GELİŞMİŞ SİSTEM PROMPTU (EKLENTİ) — ARIES artık dar bir konu listesiyle
-    # sınırlı değil; herhangi bir konuda (genel kültür, teknoloji, kodlama,
-    # yazım/analiz, tavsiye, çeviri, özetleme vb.) düşünerek, adım adım
-    # akıl yürüterek ve dürüstçe cevap verebilen genel amaçlı bir asistan gibi davranır.
+    # 🧠 GELİŞMİŞ SİSTEM PROMPTU — genel amaçlı asistan + kodlama konusunda
+    # daha güçlü/dikkatli davranması için ek talimatlar (AKILLANDIRMA EKLENTİSİ)
     system_prompt = (
         "Sen ARIES AI adında, Türkçe konuşan, çok yönlü ve son derece yetkin bir yapay zeka "
         "asistanısın. Matematik, tarih (Osmanlı, Türk Kurtuluş Savaşı, dünya tarihi), coğrafya, "
@@ -337,12 +243,17 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
         "bunu açıkça belirt. Önceki mesajlar sağlanmışsa konuşmanın bağlamını dikkate al ve "
         "tutarlı, önceki cevaplarınla çelişmeyen bir cevap ver. Kullanıcıya karşı her zaman "
         "saygılı, sabırlı ve yardımsever ol. "
+        "KODLAMA KONUSUNDA (EKLENTİ): Kullanıcı senden kod istediğinde ya da bir hata/bug "
+        "sorduğunda, mutlaka ```dil ... ``` şeklinde bir kod bloğu içinde, çalışır durumda, "
+        "gerekli yerlerde kısa Türkçe yorum satırları eklenmiş, temiz ve okunabilir kod yaz. "
+        "Kodun ne işe yaradığını 1-2 cümlelik kısa bir açıklamayla başta veya sonda özetle; "
+        "kod bloğunu gereksiz uzun anlatımlarla şişirme. Eğer bir hata ayıklaması (debug) "
+        "isteniyorsa önce hatanın kök nedenini net şekilde belirt, sonra düzeltilmiş kodu ver. "
         + ("Samimi ve arkadaşça (kanka diliyle) konuş." if buddy_mode else "Kibar ve profesyonel bir dille konuş.")
     )
 
     try:
         if AI_API_PROVIDER == "gemini":
-            # 🧠 Gemini için geçmiş mesajları 'user'/'model' rolleriyle sıraya ekle (EKLENTİ)
             gemini_contents = [
                 {"role": ("model" if h.get("role") == "assistant" else "user"), "parts": [{"text": h.get("content", "")}]}
                 for h in history
@@ -355,9 +266,11 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
                 json={
                     "systemInstruction": {"parts": [{"text": system_prompt}]},
                     "contents": gemini_contents,
-                    "generationConfig": {"maxOutputTokens": 800},
+                    # 🧠 AKILLANDIRMA EKLENTİSİ: uzun kod cevapları yarıda kesilmesin diye
+                    # token limiti 800 -> 1500'e çıkarıldı.
+                    "generationConfig": {"maxOutputTokens": 1500},
                 },
-                timeout=15,
+                timeout=20,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -365,7 +278,6 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
             return "".join(p.get("text", "") for p in parts).strip() or None
 
         elif AI_API_PROVIDER == "anthropic":
-            # 🧠 Anthropic için geçmiş mesajları doğrudan messages listesine ekle (EKLENTİ)
             anthropic_messages = list(history) + [{"role": "user", "content": user_text}]
             resp = requests.post(
                 "https://api.anthropic.com/v1/messages",
@@ -376,18 +288,17 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
                 },
                 json={
                     "model": AI_MODEL_ANTHROPIC,
-                    "max_tokens": 800,
+                    "max_tokens": 1500,
                     "system": system_prompt,
                     "messages": anthropic_messages,
                 },
-                timeout=15,
+                timeout=20,
             )
             resp.raise_for_status()
             data = resp.json()
             return "".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text").strip() or None
 
         else:  # openai
-            # 🧠 OpenAI için geçmiş mesajları system'dan sonra, mevcut sorudan önce ekle (EKLENTİ)
             openai_messages = [{"role": "system", "content": system_prompt}] + list(history) + [{"role": "user", "content": user_text}]
             resp = requests.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -398,21 +309,15 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
                 json={
                     "model": AI_MODEL_OPENAI,
                     "messages": openai_messages,
-                    "max_tokens": 800,
+                    "max_tokens": 1500,
                 },
-                timeout=15,
+                timeout=20,
             )
             resp.raise_for_status()
             data = resp.json()
             return data["choices"][0]["message"]["content"].strip() or None
 
     except Exception as e:
-        # 🩺 HATA LOGLAMA (EKLENTİ) — eskiden hata tamamen sessizce yutuluyordu,
-        # bu yüzden "API anahtarı çalışmıyor" gibi sorunların NEDENİNİ görmek
-        # imkansızdı. Artık hatanın tamamı ai_errors.log dosyasına yazılıyor
-        # (API yanıtı da dahil, örn. "model not found" veya "invalid API key").
-        # Kullanıcıya gösterilen cevap değişmiyor — ARIES yine normal
-        # "bulamadım" cevabına sessizce düşüyor, bu sadece admin için tanı kaydı.
         try:
             error_detail = str(e)
             if hasattr(e, "response") and e.response is not None:
@@ -423,8 +328,7 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
             pass
         return None
 
-# 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-RUSÇA SÖZLÜK — dictionary_tr_ru.html'den alınmıştır
-# anahtar: normalize edilmiş türkçe kelime -> (rusça, latin okunuş)
+# 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-RUSÇA SÖZLÜK
 RU_DICTIONARY = {
     'merhaba': ('Привет', 'Privet'),
     'gunaydin': ('Доброе утро', 'Dobroye utro'),
@@ -828,8 +732,7 @@ RU_TO_TR_DICTIONARY = {
     'сколько': 'Kaç tane?',
 }
 
-# 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-İNGİLİZCE SÖZLÜK (EKLENTİ)
-# Rusça sözlükle aynı mantıkla — anahtar: normalize edilmiş türkçe kelime -> ingilizce karşılığı
+# 📖 OFİS İÇİ (İNTERNETSİZ) TÜRKÇE-İNGİLİZCE SÖZLÜK
 EN_DICTIONARY = {
     'merhaba': 'Hello',
     'gunaydin': 'Good morning',
@@ -1002,7 +905,9 @@ EN_DICTIONARY = {
 }
 
 # 🌍 COĞRAFYA VERİ TABANI
-
+# ⚠️ DÜZELTME: bu sözlükte kıta bölümleri arasında (Avrupa/Asya/Afrika/Amerika/
+# Okyanusya) eksik virgüller ve dictionary'i erken kapatan yanlış yerdeki "}"
+# karakterleri vardı. Hepsi tek bir sözlük olacak şekilde birleştirildi.
 world_countries = {
     "turkiye": {"b": "Ankara", "k": "Asya/Avrupa", "lat": 39.93, "lon": 32.85, "bilgi": "Asya ve Avrupa'yı birbirine bağlayan stratejik bir köprü ülkedir."},
     "hindistan": {"b": "Yeni Delhi", "k": "Asya", "lat": 28.61, "lon": 77.20, "bilgi": "Güney Asya'da yer alan, dünyanın en kalabalık nüfusuna sahip ülkesidir."},
@@ -1055,7 +960,8 @@ world_countries = {
     "lihtenstayn": {"b": "Vaduz", "k": "Avrupa", "lat": 47.14, "lon": 9.52, "bilgi": "Alp Dağları'nda İsviçre ve Avusturya arasında yer alan, dünyanın en küçük mikro devletlerinden biridir."},
     "monako": {"b": "Monako", "k": "Avrupa", "lat": 43.73, "lon": 7.42, "bilgi": "Fransız Rivierası'nda yer alan, lüks yaşamı, kumarhaneleri ve Formula 1 yarışı ile ünlü bir prensliktir."},
     "san_marino": {"b": "San Marino", "k": "Avrupa", "lat": 43.94, "lon": 12.44, "bilgi": "İtalya toprakları ile çevrili, dünyanın en eski cumhuriyetlerinden biri olan tarihi bir mikro devlettir."},
-    "vatikan": {"b": "Vatikan", "k": "Avrupa", "lat": 41.90, "lon": 12.45, "bilgi": "Roma şehri içinde yer alan, Katolik kilisesinin yönetim merkezi ve dünyanın en küçük bağımsız devletidir."}
+    "vatikan": {"b": "Vatikan", "k": "Avrupa", "lat": 41.90, "lon": 12.45, "bilgi": "Roma şehri içinde yer alan, Katolik kilisesinin yönetim merkezi ve dünyanın en küçük bağımsız devletidir."},
+
     # Asya
     "japonya": {"b": "Tokyo", "k": "Asya", "lat": 35.68, "lon": 139.69, "bilgi": "Pasifik Okyanusu'nda yer alan, teknolojisiyle bilinen bir ada ülkesidir."},
     "cin": {"b": "Pekin", "k": "Asya", "lat": 39.90, "lon": 116.41, "bilgi": "Nüfus bakımından dünyanın en kalabalık ülkelerinden biridir."},
@@ -1094,14 +1000,14 @@ world_countries = {
     "umman": {"b": "Maskat", "k": "Asya", "lat": 23.58, "lon": 58.40, "bilgi": "Arap Yarımadası'nın güneydoğu kıyısında yer alan, tarihi kaleleri ve çöpleriyle bilinen bir ülkedir."},
     "kuveyt": {"b": "Kuveyt", "k": "Asya", "lat": 29.37, "lon": 47.97, "bilgi": "Basra Körfezi'nde yer alan, modern mimarisi ve zengin petrol yataklarıyla tanınan bir ülkedir."},
     "bahreyn": {"b": "Maname", "k": "Asya", "lat": 26.22, "lon": 50.58, "bilgi": "Basra Körfezi'nde yer alan, küçük adalardan oluşan bir Orta Doğu ülkesidir."},
-    "banglades": {"b": "Dakka", "k": "Asya", "lat": 23.81, "lon": 90.41, "bilgi": "Güney Asya'da, nüfus yoğunluğu en yüksek ülkelerden biridir."},
     "myanmar": {"b": "Naypyidaw", "k": "Asya", "lat": 19.76, "lon": 96.07, "bilgi": "Güneydoğu Asya'da yer alan, altın pagodaları ve Budist kültürüyle tanınan bir ülkedir."},
     "kamboçya": {"b": "Phnom Penh", "k": "Asya", "lat": 11.55, "lon": 104.91, "bilgi": "Güneydoğu Asya'da yer alan, devasa Angkor Wat tapınak kompleksiyle ünlü bir ülkedir."},
     "laos": {"b": "Vientiane", "k": "Asya", "lat": 17.97, "lon": 102.63, "bilgi": "Güneydoğu Asya'da yer alan, denize kıyısı olmayan dağlık ve ormanlık bir ülkedir."},
     "maledivler": {"b": "Male", "k": "Asya", "lat": 4.17, "lon": 73.51, "bilgi": "Hint Okyanusu'nda yer alan, mercan adaları ve lüks su üstü villalarıyla ünlü popüler bir tatil ülkesidir."},
     "bhutan": {"b": "Thimphu", "k": "Asya", "lat": 27.47, "lon": 89.63, "bilgi": "Himalayalar'ın doğusunda yer alan, Budist manastırları ve 'Brüt Ulusal Mutluluk' endeksiyle bilinen krallıktır."},
     "brunei": {"b": "Bandar Seri Begavan", "k": "Asya", "lat": 4.89, "lon": 114.94, "bilgi": "Borneo Adası'nda yer alan, zengin petrol yatakları ve görkemli camileriyle bilinen bir sultanlıktır."},
-    "doğu timor": {"b": "Dili", "k": "Asya", "lat": -8.55, "lon": 125.56, "bilgi": "Güneydoğu Asya'da, Timor adasının doğusunda yer alan mercan resifleriyle ünlü bir ada ülkesidir."}
+    "doğu timor": {"b": "Dili", "k": "Asya", "lat": -8.55, "lon": 125.56, "bilgi": "Güneydoğu Asya'da, Timor adasının doğusunda yer alan mercan resifleriyle ünlü bir ada ülkesidir."},
+
     # Afrika
     "fas": {"b": "Rabat", "k": "Afrika", "lat": 34.02, "lon": -6.84, "bilgi": "Kuzey Afrika'da, Cebelitarık Boğazı'na yakın konumda yer alan bir ülkedir."},
     "cezayir": {"b": "Cezayir", "k": "Afrika", "lat": 36.75, "lon": 3.06, "bilgi": "Kuzey Afrika'da, Akdeniz kıyısında yer alan, yüzölçümü açısından Afrika'nın en büyük ülkesidir."},
@@ -1139,7 +1045,8 @@ world_countries = {
     "benin": {"b": "Porto-Novo", "k": "Afrika", "lat": 6.49, "lon": 2.62, "bilgi": "Batı Afrika'da, eski Dahomey Krallığı'nın topraklarında kurulu, vudu kültürünün doğduğu yer olan ülkedir."},
     "gambiya": {"b": "Banjul", "k": "Afrika", "lat": 13.45, "lon": -16.57, "bilgi": "Gambiya Nehri boyunca uzanan ve Senegal tarafından çevrelenmiş olan Afrika anakarasındaki en küçük ülkedir."},
     "eritre": {"b": "Asmara", "k": "Afrika", "lat": 15.33, "lon": 38.93, "bilgi": "Doğu Afrika'da, Kızıldeniz kıyısında yer alan, İtalyan mimari mirasına sahip dağlık bir ülkedir."},
-    "cibuti": {"b": "Cibuti", "k": "Afrika", "lat": 11.58, "lon": 43.14, "bilgi": "Kızıldeniz girişindeki stratejik konumu nedeniyle birçok ülkenin askeri üssüne ev sahipliği yapan küçük ülkedir."
+    "cibuti": {"b": "Cibuti", "k": "Afrika", "lat": 11.58, "lon": 43.14, "bilgi": "Kızıldeniz girişindeki stratejik konumu nedeniyle birçok ülkenin askeri üssüne ev sahipliği yapan küçük ülkedir."},
+
     # Amerika
     "brezilya": {"b": "Brasilia", "k": "Güney Amerika", "lat": -15.79, "lon": -47.88, "bilgi": "Güney Amerika'da yer alan, Amazon Ormanları'nın büyük kısmını barındıran ülkedir."},
     "arjantin": {"b": "Buenos Aires", "k": "Güney Amerika", "lat": -34.60, "lon": -58.38, "bilgi": "Güney Amerika'da yer alan, tango ve futbolla özdeşleşmiş bir ülkedir."},
@@ -1164,11 +1071,11 @@ world_countries = {
     "honduras": {"b": "Tegucigalpa", "k": "Kuzey Amerika", "lat": 14.07, "lon": -87.19, "bilgi": "Orta Amerika'da, Karayip Denizi kıyısında yer alan, yağmur ormanları ve muz üretimiyle bilinen bir ülkedir."},
     "nikaragua": {"b": "Managua", "k": "Kuzey Amerika", "lat": 12.11, "lon": -86.23, "bilgi": "Orta Amerika'nın yüzölçümü en büyük ülkesidir, volkanik gölleri ve el değmemiş doğasıyla tanınır."},
     "el_salvador": {"b": "San Salvador", "k": "Kuzey Amerika", "lat": 13.69, "lon": -89.24, "bilgi": "Orta Amerika'da yer alan, yüzölçümü en küçük fakat nüfus yoğunluğu en yüksek olan Pasifik kıyısı ülkesidir."},
-    "bahamalar": {"b": "Nassau", "k": "Kuzey Amerika", "lat": 25.04, "lon": -77.34, "bilgi": "Atlas Okyanusu'nda, Florida açıklarında yer alan, yüzlerce mercan adasından oluşan turistik bir ülkedir."}
-    
+    "bahamalar": {"b": "Nassau", "k": "Kuzey Amerika", "lat": 25.04, "lon": -77.34, "bilgi": "Atlas Okyanusu'nda, Florida açıklarında yer alan, yüzlerce mercan adasından oluşan turistik bir ülkedir."},
+
     # Okyanusya
     "avustralya": {"b": "Kanberra", "k": "Okyanusya", "lat": -35.28, "lon": 149.13, "bilgi": "Hem kıta hem ülke olan, kendine özgü hayvan türleriyle bilinen bir ülkedir."},
-    "yeni zelanda": {"b": "Wellington", "k": "Okyanusya", "lat": -41.29, "lon": 174.78, "bilgi": "Pasifik Okyanusu'nda yer alan, doğal manzaralarıyla ünlü bir ada ülkesidir."}
+    "yeni zelanda": {"b": "Wellington", "k": "Okyanusya", "lat": -41.29, "lon": 174.78, "bilgi": "Pasifik Okyanusu'nda yer alan, doğal manzaralarıyla ünlü bir ada ülkesidir."},
     "papua_yeni_gine": {"b": "Port Moresby", "k": "Okyanusya", "lat": -9.44, "lon": 147.18, "bilgi": "Kültürel ve dilsel çeşitliliğiyle bilinen, yüzlerce yerli kabileye ev sahipliği yapan büyük bir ada ülkesidir."},
     "fiji": {"b": "Suva", "k": "Okyanusya", "lat": -18.12, "lon": 178.45, "bilgi": "Melanezya bölgesinde yer alan, mercan resifleri ve tropikal plajlarıyla ünlü turistik bir ada ülkesidir."},
     "samoa": {"b": "Apia", "k": "Okyanusya", "lat": -13.83, "lon": -171.75, "bilgi": "Polinezya'nın merkezinde yer alan, geleneksel yaşam tarzı ve volkanik adalarıyla tanınan bir ülkedir."},
@@ -1180,10 +1087,12 @@ world_countries = {
     "mikronezya": {"b": "Palikir", "k": "Okyanusya", "lat": 6.92, "lon": 158.16, "bilgi": "Batı Pasifik'te yer alan ve yüzlerce küçük adadan oluşan federal bir ada devletidir."},
     "palau": {"b": "Ngerulmud", "k": "Okyanusya", "lat": 7.50, "lon": 134.62, "bilgi": "Deniz biyolojisi açısından dünyanın en zengin bölgelerinden biri olan, koruma altındaki ada ülkesidir."},
     "tuvalu": {"b": "Funafuti", "k": "Okyanusya", "lat": -8.52, "lon": 179.19, "bilgi": "Vatikan'dan sonra dünyanın en az nüfuslu ikinci bağımsız ülkesi olan küçük bir Polinezya ada devletidir."},
-    "nauru": {"b": "Yaren", "k": "Okyanusya", "lat": -0.55, "lon": 166.92, "bilgi": "Dünyanın en küçük ada ülkesidir ve resmi olarak belirlenmiş bir başkenti bulunmamaktadır."}
+    "nauru": {"b": "Yaren", "k": "Okyanusya", "lat": -0.55, "lon": 166.92, "bilgi": "Dünyanın en küçük ada ülkesidir ve resmi olarak belirlenmiş bir başkenti bulunmamaktadır."},
+}
 
 # 📜 TARİH VERİ TABANI
-
+# ⚠️ DÜZELTME: "pruet savasi" satırındaki fazladan "}" kaldırıldı ve dict'i
+# erken kapatan yanlış "}" silinerek tüm maddeler tek sözlükte birleştirildi.
 historical_events = {
     "istanbulun fethi": "<b>1453 - İstanbul'un Fethi:</b> Fatih Sultan Mehmed liderliğindeki Osmanlı ordusu Bizans'ı yıktı. Orta Çağ kapandı, Yeni Çağ başladı.",
     "cumhuriyetin ilani": "<b>29 Ekim 1923 - Cumhuriyetin İlanı:</b> Gazi Mustafa Kemal Atatürk önderliğinde Türkiye Cumhuriyeti resmen kuruldu. 🇹🇷",
@@ -1211,6 +1120,7 @@ historical_events = {
     "pasarofca antlasmasi": "<b>1718 - Pasarofça Antlaşması:</b> Osmanlı'da Batı'nın üstünlüğünün kabul edildiği ve zevk, sefa, modernleşme dönemi olan Lale Devri'ni başlatan antlaşmadır.",
     "kucuk kaynarca": "<b>1774 - Küçük Kaynarca Antlaşması:</b> Kırım'ın kaybedildiği ve Osmanlı'nın ilk kez Müslüman bir topraktan vazgeçmek zorunda kaldığı ağır antlaşmadır.",
     "yeniceri ocaginin kaldirilishi": "<b>1826 - Vaka-i Hayriye:</b> Sultan II. Mahmud tarafından Yeniçeri Ocağı'nın kaldırılarak yerine modern 'Asakir-i Mansure-i Muhammediye' ordusunun kurulmasıdır.",
+
     # 🇹🇷 Kurtuluş Savaşı ve Cumhuriyet Dönemi (EKLENTİ)
     "canakkale savasi": "<b>1915 - Çanakkale Savaşı:</b> Osmanlı kuvvetlerinin İtilaf Devletleri donanma ve kara ordularına karşı Çanakkale Boğazı'nı savunduğu ve büyük bir zafer kazandığı savaştır.",
     "samsuna cikis": "<b>19 Mayıs 1919 - Mustafa Kemal'in Samsun'a Çıkışı:</b> Kurtuluş Savaşı'nın manevi başlangıcı kabul edilen tarihtir.",
@@ -1236,6 +1146,7 @@ historical_events = {
     "kadınlara secme hakki": "<b>5 Aralık 1934 - Kadınlara Seçme ve Seçilme Hakkı:</b> Türk kadınına milletvekili seçme ve seçilme hakkı verilerek birçok Avrupa ülkesinden önce siyasi haklar tanınmıştır. 🇹🇷",
     "hatayin anavatana katilmasi": "<b>1939 - Hatay'ın Anavatana Katılması:</b> Atatürk'ün şahsi meselesi olarak gördüğü diplomasi mücadelesi sonuçlanmış, Hatay Cumhuriyeti kendi kararıyla Türkiye'ye katılmıştır.",
     "cok partili donem": "<b>1946 - Çok Partili Hayata Geçiş:</b> Türkiye'de ilk çok partili genel seçimlerin yapılmasıyla demokratik süreçte yeni bir döneme girilmiştir.",
+
     # 🌍 Dünya Tarihi (EKLENTİ)
     "roma imparatorlugunun kurulusu": "<b>M.Ö. 27 - Roma İmparatorluğu'nun Kuruluşu:</b> Augustus'un ilk Roma İmparatoru unvanını almasıyla Roma Cumhuriyeti dönemi sona erip İmparatorluk dönemi başladı.",
     "roma imparatorlugunun yikilisi": "<b>M.S. 476 - Batı Roma İmparatorluğu'nun Yıkılışı:</b> Germen kumandanı Odoaker'in son Roma İmparatoru'nu tahttan indirmesiyle Orta Çağ'ın başlangıcı kabul edilir.",
@@ -1258,15 +1169,18 @@ historical_events = {
     "atom bombası atilmasi": "<b>1945 - Hiroşima ve Nagazaki'ye Atom Bombası Atılması:</b> ABD'nin nükleer silah kullanmasıyla II. Dünya Savaşı sonlanmış, insanlık nükleer çağın dehşetiyle tanışmıştır.",
     "birlesmis milletler": "<b>1945 - Birleşmiş Milletler'in Kuruluşu:</b> II. Dünya Savaşı sonrasında küresel barış ve güvenliği korumak amacıyla kurulan uluslararası organizasyondur.",
     "nato kurulusu": "<b>1949 - NATO'nun Kuruluşu:</b> Sovyet tehdidine karşı Batı Bloku ülkelerinin bir araya gelerek kurduğu askeri ve siyasi savunma ittifakıdır.",
-    "internet dogusu": "<b>1969 - ARPANET (İnternetin Temeli):</b> ABD Savunma Bakanlığı bünyesinde ilk bilgisayar ağının kurulmasıyla dijital çağın temelleri atılmıştır."
-     # 🇹🇷 İslamiyet Öncesi ve Erken Türk Tarihi (EKLENTİ)
+    "internet dogusu": "<b>1969 - ARPANET (İnternetin Temeli):</b> ABD Savunma Bakanlığı bünyesinde ilk bilgisayar ağının kurulmasıyla dijital çağın temelleri atılmıştır.",
+
+    # 🇹🇷 İslamiyet Öncesi ve Erken Türk Tarihi (EKLENTİ)
     "asya hun imparatorlugu": "<b>M.Ö. 220 - Asya Hun İmparatorluğu'nun Kuruluşu:</b> Teoman tarafından kurulan, tarihte bilinen ilk teşkilatlı Türk devletidir.",
     "kavimler gocu": "<b>375 - Kavimler Göçü:</b> Hunların batıya hareketiyle Avrupa'nın etnik ve siyasi yapısını değiştiren, İlk Çağ'ı kapatıp Orta Çağ'ı açan devasa göç dalgasıdır.",
     "gokturk devleti": "<b>552 - Bumin Kağan ve Göktürk Devleti:</b> Türk adını ilk kez resmi devlet ismi olarak kullanan ve Orhun Kitabeleri'ni bırakan köklü Türk imparatorluğudur.",
     "talas savasi": "<b>751 - Talas Savaşı:</b> Abbasiler ve Çinliler arasındaki bu savaş, Türklerin İslamiyet ile kitlesel olarak tanışmasını sağlayan kırılma noktasıdır.",
-    
-# 🕋 DİNİ TERİMLER VERİ TABANI
+}
 
+# 🕋 DİNİ TERİMLER VERİ TABANI
+# ⚠️ DÜZELTME: dict'i erken kapatan "}" kaldırıldı, tüm maddeler tek sözlükte
+# birleştirildi ve gerçek kapanış en sona taşındı.
 religious_database = {
     "hicret": "<b>Hicret (622):</b> Hz. Muhammed (s.a.v.) ve Müslümanların Mekke'den Medine'ye göç etmesidir. Hicri takvimin başlangıcıdır.",
     "bedir savasi": "<b>Bedir Savaşı (624):</b> Müslümanlar ile Mekkeli müşrikler arasındaki ilk büyük savaştır. Müslümanlar zafer kazanmıştır.",
@@ -1279,9 +1193,8 @@ religious_database = {
     "kadir gecesi": "<b>Kadir Gecesi:</b> Kur'an-ı Kerim'in indirilmeye başladığına inanılan, Ramazan ayının son on gününde aranan kutsal gecedir.",
     "ramazan orucu": "<b>Ramazan Orucu:</b> İslam'ın beş şartından biri olan, Ramazan ayı boyunca imsaktan iftara kadar yeme, içme ve diğer bazı davranışlardan uzak durmayı içeren ibadettir.",
     "islamin sartlari": "<b>İslam'ın Şartları:</b> Kelime-i şehadet, namaz, oruç, zekât ve hacdan oluşan beş temel ibadettir.",
-    "dört halife donemi": "<b>Dört Halife Dönemi (632-661):</b> Hz. Ebubekir, Hz. Ömer, Hz. Osman ve Hz. Ali'nin sırasıyla halifelik yaptığı, İslam'ın hızla yayıldığı dönemdir."
-}
-        "hudeybiye antlasmasi": "<b>Hudeybiye Antlaşması (628):</b> Müslümanlar ile Mekkeli müşrikler arasında yapılan, Müslümanların varlığının hukuken resmen tanındığı barış antlaşmasıdır.",
+    "dört halife donemi": "<b>Dört Halife Dönemi (632-661):</b> Hz. Ebubekir, Hz. Ömer, Hz. Osman ve Hz. Ali'nin sırasıyla halifelik yaptığı, İslam'ın hızla yayıldığı dönemdir.",
+    "hudeybiye antlasmasi": "<b>Hudeybiye Antlaşması (628):</b> Müslümanlar ile Mekkeli müşrikler arasında yapılan, Müslümanların varlığının hukuken resmen tanındığı barış antlaşmasıdır.",
     "hayberin fethi": "<b>Hayber'in Fethi (629):</b> Şam ticaret yolunun güvenliğini sağlamak amacıyla Yahudilerin elindeki kalelerin Müslümanlar tarafından fethedilmesidir.",
     "mute savasi": "<b>Mute Savaşı (629):</b> Müslümanlar ile Bizans ordusu arasında yapılan ilk büyük savaştır.",
     "tebuk seferi": "<b>Tebük Seferi (631):</b> Hz. Muhammed'in (s.a.v.) Bizans'ın saldırı hazırlığında olduğu istihbaratı üzerine çıktığı son askeri seferdir.",
@@ -1295,10 +1208,11 @@ religious_database = {
     "tasavvuf": "<b>Tasavvuf:</b> İslam'ın kalbi ve ahlaki boyutunu öne çıkaran, nefsi terbiye ederek Allah'a manen yakınlaşmayı amaçlayan düşünce ve yaşam tarzıdır.",
     "mevlit": "<b>Mevlit Kandili:</b> Peygamber Efendimiz Hz. Muhammed'in (s.a.v.) dünyaya geldiği rebiyülevvel ayının on ikinci gecesidir.",
     "regaip": "<b>Regaip Kandili:</b> Üç ayların başlangıcı olan recep ayının ilk perşembeyi cumaya bağlayan mübarek gecesidir.",
-    "berat": "<b>Berat Kandili:</b> Şaban ayının on beşinci gecesi olan, günahlardan arınma ve amel defterlerinin yazıldığına inanılan gecedir."
+    "berat": "<b>Berat Kandili:</b> Şaban ayının on beşinci gecesi olan, günahlardan arınma ve amel defterlerinin yazıldığına inanılan gecedir.",
+}
 
 # 🧬 ANATOMİ VE FEN VERİ TABANI
-
+# ⚠️ DÜZELTME: erken kapatan "}" kaldırıldı, tüm maddeler birleştirildi.
 science_database = {
     "kalp": "<b>Anatomi - Kalp:</b> Göğüs boşluğunda yer alan, kaslı bir pompadır. Vücuda kan pompalar. Üstte iki kulakçık, altta iki karıncık olmak üzere 4 odacıktan oluşur.",
     "akciyer": "<b>Anatomi - Akciğerler:</b> Solunum sisteminin ana organıdır. Göğüs kafesinde sağ ve sol olmak üzere iki adettir. Kana oksijen sağlar, karbondioksiti dışarı atar.",
@@ -1314,9 +1228,8 @@ science_database = {
     "dolasim sistemi": "<b>Fen Bilgisi - Dolaşım Sistemi:</b> Kalp, damarlar ve kandan oluşan, besin ve oksijeni vücuda taşıyan sistemdir.",
     "sindirim sistemi": "<b>Fen Bilgisi - Sindirim Sistemi:</b> Ağızdan başlayıp bağırsaklara kadar uzanan, besinlerin parçalanıp vücut tarafından kullanılabilir hale getirildiği sistemdir.",
     "kromozom": "<b>Fen Bilgisi - Kromozom:</b> Hücre çekirdeğinde bulunan, DNA ve proteinden oluşan, genetik bilgiyi taşıyan yapılardır. İnsanda 23 çift kromozom bulunur.",
-    "enzim": "<b>Fen Bilgisi - Enzim:</b> Canlı hücrelerde üretilen, kimyasal tepkimeleri hızlandıran özel protein yapılı biyokatalizörlerdir."
-}
-        "pankreas": "<b>Anatomi - Pankreas:</b> Hem sindirim enzimleri üreten hem de insülin ve glukagon gibi kan şekerini düzenleyen hormonları salgılayan karma bir bezdir.",
+    "enzim": "<b>Fen Bilgisi - Enzim:</b> Canlı hücrelerde üretilen, kimyasal tepkimeleri hızlandıran özel protein yapılı biyokatalizörlerdir.",
+    "pankreas": "<b>Anatomi - Pankreas:</b> Hem sindirim enzimleri üreten hem de insülin ve glukagon gibi kan şekerini düzenleyen hormonları salgılayan karma bir bezdir.",
     "dalak": "<b>Anatomi - Dalak:</b> Karın boşluğunun sol üst kısmında yer alan, eski alyuvarları yok eden, kanı süzen ve bağışıklık sistemine yardımcı olan organdır.",
     "kloroplast": "<b>Fen Bilgisi - Kloroplast:</b> Sadece bitki hücrelerinde bulunan, yeşil rengini veren klorofil pigmentini barındıran ve fotosentezin gerçekleştiği organeldir.",
     "ribozom": "<b>Fen Bilgisi - Ribozom:</b> Tüm canlı hücrelerde ortak olarak bulunan, amino asitleri birleştirerek hücrenin ihtiyacı olan proteinleri sentezleyen organeldir.",
@@ -1330,10 +1243,12 @@ science_database = {
     "ince_bagirsak": "<b>Anatomi - İnce Bağırsak:</b> Sindirim sisteminde besinlerin kimyasal sindiriminin tamamlandığı ve emilerek kana geçtiği, villus adı verilen kıvrımlara sahip organdır.",
     "kalin_bagirsak": "<b>Anatomi - Kalın Bağırsak:</b> Sindirilmeyen besin atıklarındaki su, vitamin ve minerallerin geri emilimini gerçekleştiren, sindirim sisteminin son kısımlarından biridir.",
     "akyuvar": "<b>Anatomi - Akyuvarlar (Lökositler):</b> Vücudu mikroplara, virüslere ve enfeksiyonlara karşı koruyan, bağışıklık sisteminin temel taşı olan beyaz kan hücreleridir.",
-    "alyuvar": "<b>Anatomi - Alyuvarlar (Eritrositler):</b> İçerdiği hemoglobin sayesinde akciğerlerden aldığı oksijeni dokulara, dokulardaki karbondioksiti ise akciğerlere taşıyan kırmızı kan hücreleridir."
+    "alyuvar": "<b>Anatomi - Alyuvarlar (Eritrositler):</b> İçerdiği hemoglobin sayesinde akciğerlerden aldığı oksijeni dokulara, dokulardaki karbondioksiti ise akciğerlere taşıyan kırmızı kan hücreleridir.",
+}
 
 # ⚡ FİZİK VE GEOMETRİ VERİ TABANI
-
+# ⚠️ DÜZELTME: erken kapatan "}" kaldırıldı, tüm maddeler birleştirildi ve
+# hiç var olmayan gerçek kapanış "}" en sona eklendi.
 physics_geometry_database = {
     "yercekimi": "<b>Fizik - Yerçekimi Kuvveti:</b> Kütlesi olan cisimlerin birbirini çekmesidir. Dünyadaki yerçekimi ivmesi yaklaşık olarak $g = 9.81 m/s^2$ kabul edilir. Keşfeden bilim insanı Isaac Newton'dır.",
     "surtunme": "<b>Fizik - Sürtünme Kuvveti:</b> Harekete karşı koyan zorlayıcı kuvvettir. Temas eden yüzeyler arasında oluşur ve kinetik enerjiyi ısı enerjisine dönüştürür.",
@@ -1347,9 +1262,8 @@ physics_geometry_database = {
     "basinç": "<b>Fizik - Basınç:</b> Birim yüzeye etki eden dik kuvvettir. Formülü: $P = F / A$ şeklindedir, birimi Pascal (Pa)'dır.",
     "daire": "<b>Geometri - Daire:</b> Bir merkez noktadan eşit uzaklıktaki noktaların oluşturduğu düzlemsel şekildir. Alanı $A = \\pi r^2$, çevresi $2\\pi r$ formülüyle bulunur.",
     "pisagor teoremi": "<b>Geometri - Pisagor Teoremi:</b> Dik üçgende hipotenüsün karesi, diğer iki kenarın karelerinin toplamına eşittir: $a^2 + b^2 = c^2$.",
-    "hacim": "<b>Geometri - Hacim:</b> Bir cismin uzayda kapladığı yerin ölçüsüdür. Küpün hacmi $V = a^3$, dikdörtgenler prizmasının hacmi $V = a \\cdot b \\cdot c$ formülüyle bulunur."
-}
-        "kaldirma_kuvveti": "<b>Fizik - Kaldırma Kuvveti:</b> Sıvı veya gaz içindeki bir cisme, yerini değiştirdiği akışkanın ağırlığına eşit miktarda uygulanan yukarı yönlü kuvvettir. Arşimet tarafından keşfedilmiştir.",
+    "hacim": "<b>Geometri - Hacim:</b> Bir cismin uzayda kapladığı yerin ölçüsüdür. Küpün hacmi $V = a^3$, dikdörtgenler prizmasının hacmi $V = a \\cdot b \\cdot c$ formülüyle bulunur.",
+    "kaldirma_kuvveti": "<b>Fizik - Kaldırma Kuvveti:</b> Sıvı veya gaz içindeki bir cisme, yerini değiştirdiği akışkanın ağırlığına eşit miktarda uygulanan yukarı yönlü kuvvettir. Arşimet tarafından keşfedilmiştir.",
     "is": "<b>Fizik - İş (W):</b> Bir kuvvete maruz kalan cismin kuvvet doğrultusunda yer değiştirmesidir. Formülü: $W = F \\cdot \\Delta x$ şeklindedir, birimi Joule (J)'dür.",
     "güç": "<b>Fizik - Güç (P):</b> Birim zamanda yapılan iş miktarıdır. Formülü: $P = W / t$ şeklindedir, birimi Watt (W)'tır.",
     "kütle_ve_agirlik": "<b>Fizik - Kütle ve Ağırlık:</b> Kütle (m) değişmeyen madde miktarı olup skalerdir; ağırlık (G) ise kütleye etki eden yerçekimi kuvvetidir ($G=m \\cdot g$) ve vektöreldir.",
@@ -1363,7 +1277,8 @@ physics_geometry_database = {
     "çember": "<b>Geometri - Çember:</b> Düzlemde sabit bir noktaya eşit uzaklıkta bulunan noktaların oluşturduğu içi boş eğridir. İçi dolu olan daireden farkı sadece çevresinin ($2\\pi r$) olmasıdır.",
     "silindir": "<b>Geometri - Silindir:</b> Alt ve üst tabanı birbirine eş iki daireden oluşan geometrik cisimdir. Hacmi: $V = \\pi r^2 \\cdot h$, yanal alanı: $2\\pi r \\cdot h$ formülüyle bulunur.",
     "koni": "<b>Geometri - Koni:</b> Dairesel bir taban ve bu taban düzleminin dışındaki bir tepe noktasını birleştiren doğruların oluşturduğu cisimdir. Hacmi: $V = \\frac{1}{3} \\pi r^2 \\cdot h$'tır.",
-    "küre": "<b>Geometri - Küre:</b> Uzayda sabit bir noktadan eşit uzaklıktaki noktaların oluşturduğu üç boyutlu geometrik şekildir. Hacmi $V = \\frac{4}{3} \\pi r^3$, yüzey alanı $A = 4\\pi r^2$ formülüyle bulunur."
+    "küre": "<b>Geometri - Küre:</b> Uzayda sabit bir noktadan eşit uzaklıktaki noktaların oluşturduğu üç boyutlu geometrik şekildir. Hacmi $V = \\frac{4}{3} \\pi r^3$, yüzey alanı $A = 4\\pi r^2$ formülüyle bulunur.",
+}
 
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
 GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi", "hello", "selaminaleykum", "aleykumselam", "gunaydin", "iyi gunler", "iyi aksamlar"]
@@ -1371,11 +1286,10 @@ GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", 
 # 🙏 TEŞEKKÜR / NEZAKET KELİMELERİ (fuzzy eşleşme için)
 THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sagolun", "minnettarim", "ellerinesaglik", "harikasin", "cok iyisin", "super", "mukemmel"]
 
-# 😊 "RİCA EDERİM" TÜRÜ KARŞILIK KALIPLARI (kullanıcı bota teşekkür ettiğinde bot cevap veriyor;
-# ama kullanıcı "rica ederim" derse bota bir onay/nezaket cevabı gerekiyor)
+# 😊 "RİCA EDERİM" TÜRÜ KARŞILIK KALIPLARI
 YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil"]
 
-# 🏗️ "KİM YAPTI" SORU KALIPLARI (boşluksuz/bitişik hâliyle de kontrol edilecek)
+# 🏗️ "KİM YAPTI" SORU KALIPLARI
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
@@ -1402,8 +1316,6 @@ TRANSLATE_TO_RU_ENG = re.compile(r'^translate\s+(.+?)\s+to\s+russian\.?$', re.IG
 
 
 def normalize_tr(s):
-    """Sözlük anahtarlarıyla birebir aynı normalizasyonu uygular
-    (büyük 'İ' harfi sorunu dahil doğru şekilde ele alınır)."""
     s = s.replace("İ", "i").replace("I", "ı")
     s = s.lower().strip()
     s = s.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
@@ -1412,8 +1324,6 @@ def normalize_tr(s):
 
 
 def parse_translation_command(text):
-    """'X'i ingilizceye çevir' / 'translate X to russian' gibi doğrudan çeviri
-    komutlarını yakalar. Eşleşme varsa (çevrilecek_metin, hedef_dil_kodu) döner."""
     text = text.strip()
     for pattern, target in [(TRANSLATE_TO_EN_TR, 'en'), (TRANSLATE_TO_RU_TR, 'ru'),
                              (TRANSLATE_TO_EN_ENG, 'en'), (TRANSLATE_TO_RU_ENG, 'ru')]:
@@ -1424,7 +1334,6 @@ def parse_translation_command(text):
 
 
 def translate_html_preserving_tags(html_text, target_lang):
-    """HTML etiketlerini (<b>, <span> vb.) bozmadan sadece metin kısımlarını çevirir."""
     if not TRANSLATOR_AVAILABLE:
         return html_text
     try:
@@ -1441,13 +1350,7 @@ def translate_html_preserving_tags(html_text, target_lang):
         return html_text
 
 
-# 🇷🇺➡️🇹🇷 ve 🇬🇧➡️🇹🇷 LOG EKRANI İÇİN OTOMATİK ÇEVİRİ (EKLENTİ)
-# Panelde loglara bakarken Rusça (Kiril alfabeli) veya İngilizce bir soru
-# görürsen anlaman için, log satırının sonuna otomatik olarak Türkçe
-# çevirisini ekliyoruz.
 CYRILLIC_PATTERN = re.compile(r'[\u0400-\u04FF]')
-# İngilizceye özgü yaygın kelimeler — Türkçe'de bulunmayan Latin kökenli
-# kelimelerle eşleşme yaparak "bu İngilizce mi?" tahmini yapıyoruz.
 ENGLISH_HINT_PATTERN = re.compile(
     r'\b(the|is|are|what|how|why|when|where|which|who|hello|please|thanks|thank you|'
     r'would|could|can you|do you|does|have you|i am|i\'m|you are|you\'re)\b',
@@ -1457,10 +1360,6 @@ TURKISH_CHAR_PATTERN = re.compile(r'[çğıöşüÇĞİÖŞÜ]')
 
 
 def add_turkish_translation_to_log_line(log_line):
-    """Log satırında Kiril alfabesi (Rusça) veya yaygın İngilizce kalıpları
-    tespit edilirse, satırın sonuna '(TR: ...)' şeklinde Türkçe çevirisini
-    ekler. Türkçe ise veya çeviri motoru yoksa/başarısız olursa satırı
-    olduğu gibi bırakır."""
     is_russian = bool(CYRILLIC_PATTERN.search(log_line))
     is_english = (not is_russian) and bool(ENGLISH_HINT_PATTERN.search(log_line)) and not TURKISH_CHAR_PATTERN.search(log_line)
 
@@ -1469,7 +1368,6 @@ def add_turkish_translation_to_log_line(log_line):
     if not TRANSLATOR_AVAILABLE:
         return log_line
     try:
-        # Log satırı "... -> Soru: <mesaj>" formatında; sadece soru kısmını çeviriyoruz
         if "-> Soru: " in log_line:
             prefix, question_part = log_line.split("-> Soru: ", 1)
             source_lang = 'ru' if is_russian else 'en'
@@ -1481,11 +1379,6 @@ def add_turkish_translation_to_log_line(log_line):
 
 
 def format_code_blocks(text):
-    """🩹 KOD YAMA (EKLENTİ) — AI cevabında ```dil ... ``` şeklinde kod bloğu
-    varsa (veya `satır içi kod` varsa), bunu düz metin olarak göstermek yerine
-    kopyalanabilir, sözdizimi rengi taşıyan bir kod kutusuna çevirir. Kod
-    içeriği HTML olarak kaçışlanır (escape) ki kullanıcının/AI'nin yazdığı
-    < > & gibi karakterler sayfayı bozmasın veya istemsiz HTML çalıştırmasın."""
     if not text:
         return text
 
@@ -1502,18 +1395,13 @@ def format_code_blocks(text):
             '</div>'
         )
 
-    # ```dil\nkod\n``` bloklarını yakala (çok satırlı)
     text = re.sub(r'```(\w*)\n?(.*?)```', _replace_block, text, flags=re.DOTALL)
-
-    # Tek satırlık `kod` ifadelerini basit <code> etiketine çevir
     text = re.sub(r'`([^`\n]+)`', lambda m: f'<code class="inline-code">{html.escape(m.group(1))}</code>', text)
 
     return text
 
 
 def build_reply(text):
-    """Kullanıcı 'do you speak english/russian' dediyse, o dil modu session'da
-    kayıtlıdır; bu fonksiyon her cevabı otomatik olarak o dile çevirip döner."""
     target = session.get('lang')
     if target in ('en', 'ru'):
         text = translate_html_preserving_tags(text, target)
@@ -1552,10 +1440,6 @@ def fetch_country_from_api(country_name):
 
 # --------------------------------------------------------------------------
 # 🔒 GÜVENLİ MATEMATİK MOTORU (eval() yerine)
-# eval() kullanıcı girdisini doğrudan çalıştırdığı için güvenlik riski
-# taşır. Bunun yerine sadece +,-,*,/ ve parantezlere izin veren bir
-# ast tabanlı hesaplayıcı kullanıyoruz. Ayrıca çok uzun / çok büyük
-# işlemleri (DoS riski) baştan engelliyoruz.
 # --------------------------------------------------------------------------
 
 _ALLOWED_OPERATORS = {
@@ -1565,10 +1449,9 @@ _ALLOWED_OPERATORS = {
     ast.Div: operator.truediv,
     ast.USub: operator.neg,
     ast.UAdd: operator.pos,
-    ast.Pow: operator.pow,   # 🧮 Üs alma desteği (EKLENTİ, örn. 2**3)
+    ast.Pow: operator.pow,
 }
 
-# 🧮 Güvenli fonksiyon çağrıları — sadece bu isimlere izin veriliyor (EKLENTİ)
 _ALLOWED_FUNCTIONS = {
     "sqrt": math.sqrt,
     "sin": math.sin,
@@ -1576,9 +1459,9 @@ _ALLOWED_FUNCTIONS = {
     "tan": math.tan,
 }
 
-MAX_EXPRESSION_LENGTH = 80          # aşırı uzun ifadeleri reddet (üs/kök için biraz artırıldı)
-MAX_NUMBER_LENGTH = 15               # tek bir sayı en fazla 15 haneli olabilir
-MAX_POWER_EXPONENT = 20              # aşırı büyük üs işlemlerini (DoS riski) engelle
+MAX_EXPRESSION_LENGTH = 80
+MAX_NUMBER_LENGTH = 15
+MAX_POWER_EXPONENT = 20
 
 
 def _safe_eval_node(node):
@@ -1598,7 +1481,6 @@ def _safe_eval_node(node):
         return _ALLOWED_OPERATORS[type(node.op)](left, right)
     if isinstance(node, ast.UnaryOp) and type(node.op) in _ALLOWED_OPERATORS:
         return _ALLOWED_OPERATORS[type(node.op)](_safe_eval_node(node.operand))
-    # 🧮 sqrt(), sin(), cos(), tan() gibi güvenli fonksiyon çağrılarına izin ver (EKLENTİ)
     if isinstance(node, ast.Call):
         func_name = getattr(node.func, "id", None)
         if func_name in _ALLOWED_FUNCTIONS and len(node.args) == 1 and not node.keywords:
@@ -1619,7 +1501,6 @@ def safe_math_eval(expression):
 
 
 def fuzzy_word_in(word, candidates, cutoff=0.8):
-    """Kelimeyi ve adaylarını difflib ile karşılaştırıp yazım hatalarını tolere eder."""
     if word in candidates:
         return True
     return bool(get_close_matches(word, candidates, n=1, cutoff=cutoff))
@@ -1645,7 +1526,7 @@ def get_logs():
     password = data.get('password', '')
     action = data.get('action', 'get')
 
-    if password != "4253":
+    if password != "4235":
         return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
 
     if action == 'clear':
@@ -1653,7 +1534,6 @@ def get_logs():
             os.remove("sorular.txt")
         return jsonify({"success": True, "logs": []}), 200, response_headers
 
-    # 🛠️ BAKIM MODU action'ları (EKLENTİ)
     if action == 'maintenance':
         MAINTENANCE_MODE = True
         _save_maintenance_state(True)
@@ -1673,17 +1553,11 @@ def get_logs():
         with open("sorular.txt", "r", encoding="utf-8") as file:
             logs = file.readlines()
         clean_logs = [line.strip() for line in logs if line.strip()]
-        # 🇷🇺➡️🇹🇷 Rusça (Kiril) log satırlarına otomatik Türkçe çeviri ekle (EKLENTİ)
         clean_logs = [add_turkish_translation_to_log_line(line) for line in clean_logs]
         return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else ["Henüz hiç soru sorulmadı."]}), 200, response_headers
     return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı."]}), 200, response_headers
 
 
-# --------------------------------------------------------------------------
-# 🖥️ /api/agent-poll — Bilgisayarındaki agent.py bu endpoint'i periyodik
-# olarak kontrol eder; bekleyen komut varsa alır ve kuyruk temizlenir.
-# AGENT_SECRET boşsa (ayarlanmamışsa) bu endpoint tamamen kapalıdır (403).
-# --------------------------------------------------------------------------
 @app.route('/api/agent-poll', methods=['POST', 'OPTIONS'])
 def agent_poll():
     if request.method == 'OPTIONS':
@@ -1704,9 +1578,6 @@ def agent_poll():
 
 @app.route('/ask', methods=['POST', 'OPTIONS'])
 def ask():
-    # 🌐 CORS DESTEĞİ (EKLENTİ) — panel farklı bir adresten (origin) barındırılıyorsa
-    # tarayıcı bu isteği CORS koruması yüzünden engelleyebilir. get-logs
-    # endpoint'indeki gibi izin başlıklarını burada da ekliyoruz.
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -1715,21 +1586,11 @@ def ask():
     if request.method == 'OPTIONS':
         return jsonify({"success": True}), 200, cors_headers
 
-    # 🧪 ADMİN TEST BYPASS (EKLENTİ) — bakım modundayken bile, panel üzerinden
-    # doğru şifre ("4235") ile gönderilen istekler gerçek motoru çalıştırır.
-    # Böylece bakım sırasında geliştirmeleri canlıda test edebilirsin;
-    # şifresiz/normal kullanıcı istekleri bakım mesajını almaya devam eder.
-    is_admin_test = request.json.get("admin_password") == "4253"
+    is_admin_test = request.json.get("admin_password") == "4235"
 
-    # 🛠️ BAKIM MODU KONTROLÜ (EKLENTİ) — MAINTENANCE_MODE açıkken hiçbir motor
-    # (çeviri, matematik, coğrafya, tarih, fen, AI fallback vb.) çalıştırılmaz;
-    # log bile tutulmadan direkt sabit mesaj döner. ARIES bu sırada tamamen durmuş sayılır.
-    # (Admin test bypass'ı hariç.)
     if MAINTENANCE_MODE and not is_admin_test:
         return jsonify({"reply": MAINTENANCE_MESSAGE, "maintenance": True}), 200, cors_headers
 
-    # 💬 GİRİŞ YAPMAYANLARA MESAJ SINIRI (EKLENTİ) — admin test bypass ve
-    # Google ile giriş yapmış kullanıcılar bu sınıra tabi değildir.
     if GOOGLE_LOGIN_ENABLED and not is_admin_test and not session.get('google_user'):
         current_count = session.get('guest_message_count', 0)
         if current_count >= GUEST_MESSAGE_LIMIT:
@@ -1749,17 +1610,14 @@ def ask():
         with open("sorular.txt", "a", encoding="utf-8") as file:
             file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
 
-    # Noktalama temizliği
     user_message = re.sub(r'[.,\?!;\(\)"\'’\-]', '', user_message)
     norm_msg = user_message.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
 
-    # 🛠️ YANLIŞ YAZIM VE KISALTMA TOLERANS MOTORU (nber, slm, naber, marhaba...)
     typo_rules = {
         "nber": "naber", "nbr": "naber", "slm": "selam", "mrb": "merhaba",
         "mrhb": "merhaba", "knk": "kanka", "kgo": "coğrafya", "mat": "matematik",
         "fzk": "fizik", "gmt": "geometri", "antm": "anatomi", "akciger": "akciyer",
         "marhaba": "merhaba", "mehraba": "merhaba", "selm": "selam",
-        # 🧠 Daha fazla yazım hatası / kısaltma toleransı (EKLENTİ)
         "slam": "selam", "selamm": "selam", "mrhba": "merhaba", "merhabaa": "merhaba",
         "nbr2": "naber", "naberr": "naber", "naaber": "naber", "napiyorsun": "naber",
         "n'aber": "naber", "n'apiyorsun": "naber",
@@ -1778,37 +1636,29 @@ def ask():
     words = norm_msg.split()
     fixed_words = [typo_rules.get(w, w) for w in words]
     norm_msg = " ".join(fixed_words)
-    norm_msg_nospace = norm_msg.replace(" ", "")  # bitişik yazımları yakalamak için (örn. "kimyapti")
+    norm_msg_nospace = norm_msg.replace(" ", "")
 
-    # Kanka modu SADECE kullanıcı gerçekten "kanka" derse aktif olur.
-    # ("naber" artık kanka modunu tetiklemiyor; varsayılan ton ciddi/nazik kalır.)
     is_buddy_mode = "kanka" in norm_msg
 
-    # 🖥️ Uygulama Kapatma Komutu Kontrolü (EKLENTİ) — sadece whitelist'teki
-    # uygulamalar için, rastgele komut çalıştırma YOK.
     agent_reply = try_queue_app_close_command(norm_msg, raw_message)
     if agent_reply:
         save_log("CEVAPLANDI (AGENT)")
         return build_reply(agent_reply)
 
-    # 🔁 Doğrudan Çeviri Komutu ("kedi'yi ingilizceye çevir", "translate cat to russian")
     phrase_to_translate, translate_target = parse_translation_command(raw_message)
     if phrase_to_translate:
-        # Rusça için önce internetsiz yerel sözlüğe bakıyoruz (hızlı ve internetsiz çalışır)
         if translate_target == 'ru':
             key = normalize_tr(phrase_to_translate)
             if key in RU_DICTIONARY:
                 ru_word, translit = RU_DICTIONARY[key]
                 save_log("CEVAPLANDI")
                 return jsonify({"reply": f'<span class="expert-badge badge-sozel">Sözlük (RU)</span><br><b>{phrase_to_translate}</b> → <b>{ru_word}</b><br><span style="opacity:0.7;font-style:italic;">({translit})</span>'})
-        # 🇬🇧 İngilizce için önce internetsiz yerel sözlüğe bakıyoruz (EKLENTİ — Rusça ile aynı mantık)
         if translate_target == 'en':
             key = normalize_tr(phrase_to_translate)
             if key in EN_DICTIONARY:
                 en_word = EN_DICTIONARY[key]
                 save_log("CEVAPLANDI")
                 return jsonify({"reply": f'<span class="expert-badge badge-sozel">Sözlük (EN)</span><br><b>{phrase_to_translate}</b> → <b>{en_word}</b>'})
-        # İngilizce veya sözlükte bulunamayan Rusça için (varsa) internet üzerinden çeviri
         if TRANSLATOR_AVAILABLE:
             try:
                 translated = GoogleTranslator(source='auto', target=translate_target).translate(phrase_to_translate)
@@ -1822,14 +1672,11 @@ def ask():
             save_log("HATA")
             return jsonify({"reply": "Bu kelime yerel sözlükte bulunamadı ve online çeviri şu an kullanılamıyor."})
 
-    # 🇹🇷 Tekrar Türkçeye Dönme Kontrolü
     if any(p in norm_msg for p in LANGUAGE_RESET_PHRASES):
         session['lang'] = None
         save_log("CEVAPLANDI")
         return jsonify({"reply": "Tamam, Türkçe devam ediyorum. 🇹🇷"})
 
-    # 🗣️ Dil Sorusu Kontrolü ("do you speak english/russian" vb.) — cevap verdikten sonra
-    # o dilde konuşmaya devam etmek için session'a dil modu kaydediliyor.
     if any(p in norm_msg for p in LANGUAGE_PHRASES["english"]):
         session['lang'] = 'en'
         save_log("CEVAPLANDI")
@@ -1839,33 +1686,28 @@ def ask():
         save_log("CEVAPLANDI")
         return jsonify({"reply": "Да, я говорю по-русски! Теперь буду отвечать по-русски — спрашивайте что угодно. Скажите «türkçe konuş», чтобы вернуться к турецкому. 🇷🇺"})
 
-    # 🏗️ Yapımcı Kontrolü (bitişik yazımı da destekler: "seni kimyaptı")
     if any(p in norm_msg for p in CREATOR_PHRASES) or any(p.replace(" ", "") in norm_msg_nospace for p in CREATOR_PHRASES):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
             return build_reply('<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni tam bir dahi olmam için <b>MİC</b> geliştirdi kanka! Adım <b>ARIES AI</b>. 🚀')
         return build_reply('<span class="expert-badge badge-sozel">Sistem Çekirdeği</span><br>Beni <b>MİC</b> geliştirdi. Adım <b>ARIES AI</b>.')
 
-    # 👋 Selamlaşma Kontrolü (fuzzy: "naber", "marhaba dostum" gibi yazım hatalarını da yakalar)
     if any(fuzzy_word_in(w, GREETING_WORDS) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
             return build_reply("Naber kanka! ARIES AI hazır, ne soruyoruz? 😎")
         return build_reply("Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?")
 
-    # 🙏 Teşekkür Kontrolü ("teşekkürler", "sağol", "eyvallah" vb. — fuzzy eşleşme ile yazım hatalarını da tolere eder)
     if any(fuzzy_word_in(w, THANKS_WORDS, cutoff=0.75) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
             return build_reply("Rica ederim kanka, başka bir sorun olursa buradayım! 🙌")
         return build_reply("Rica ederim, başka bir konuda yardımcı olabilirim.")
 
-    # 😊 "Rica ederim / bir şey değil" Kontrolü (kullanıcı bota bu şekilde karşılık verdiğinde)
     if any(p in norm_msg_nospace for p in YOURE_WELCOME_WORDS):
         save_log("CEVAPLANDI")
         return build_reply("Ne demek, her zaman yardımcı olmaktan memnuniyet duyarım. 😊")
 
-    # 😤 Argo/hakaret veya "dalga mı geçiyorsun" tarzı sinirli ifadeler (EKLENTİ)
     if any(fuzzy_word_in(w, INSULT_WORDS, cutoff=0.85) for w in fixed_words):
         save_log("CEVAPLANDI (SAKINLESTIRME)")
         if is_buddy_mode:
@@ -1876,13 +1718,8 @@ def ask():
         save_log("CEVAPLANDI (SAKINLESTIRME)")
         return build_reply("Hayır, dalga geçmiyorum — bazen soruyu tam anlayamayabiliyorum. Sorunu biraz daha farklı bir şekilde yazar mısın?")
 
-    # 🔢 Matematik Motoru (güvenli hesaplayıcı ile — üs, kök, yüzde, trigonometri destekli EKLENTİ)
-    # NOT: parantez/nokta gibi karakterler yukarıda (norm_msg için) temizlendiğinden,
-    # matematik ifadesini orijinal mesajdan (raw_message) alıyoruz ki parantezli
-    # fonksiyon çağrıları (örn. sqrt(16)) ve ondalıklı sayılar (3.14) bozulmasın.
     math_source = re.sub(r'[?!;"\'’]', '', raw_message.lower()).replace(",", ".")
 
-    # 🔢 Sözel operatörleri sembole çevir (EKLENTİ) — "31 kere 31", "31x31" gibi ifadeleri yakalar
     MATH_WORD_OPERATORS = [
         (r'\bkere\b', '*'), (r'\bçarpı\b', '*'), (r'\bcarpi\b', '*'), (r'\bx\b', '*'),
         (r'\bbölü\b', '/'), (r'\bbolu\b', '/'),
@@ -1903,8 +1740,8 @@ def ask():
     math_prepped = math_source
     for tr_name, std_name in MATH_FUNCTION_ALIASES.items():
         math_prepped = math_prepped.replace(tr_name, std_name)
-    math_prepped = re.sub(r'(\d+(?:\.\d+)?)\s*%', r'(\1/100)', math_prepped)  # "50%" -> "(50/100)"
-    math_prepped = math_prepped.replace('^', '**')  # "2^3" -> "2**3"
+    math_prepped = re.sub(r'(\d+(?:\.\d+)?)\s*%', r'(\1/100)', math_prepped)
+    math_prepped = math_prepped.replace('^', '**')
 
     math_chars = set("0123456789+-*/(). ")
     is_basic_math = any(char in math_source for char in ['+', '-', '*', '/']) and set(math_source).issubset(math_chars)
@@ -1922,31 +1759,26 @@ def ask():
                 return build_reply("İşlem hesaplanamadı kanka, sayılar çok büyük olabilir ya da ifade geçersiz. Kontrol et.")
             return build_reply("İşlem hesaplanamadı. Sayılar çok büyük olabilir ya da ifade geçersiz görünüyor, lütfen kontrol edin.")
 
-    # 🧬 Anatomi ve Fen Bilgisi Kontrolü
     for key, response in science_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sayisal" style="background-color:#00e676; color:black;">Fen Bilimleri & Anatomi</span><br>{response}')
 
-    # ⚡ Fizik ve Geometri Kontrolü
     for key, response in physics_geometry_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sayisal" style="background-color:#ff9100; color:black;">Fizik & Geometri</span><br>{response}')
 
-    # 🕋 Dini Terimler Kontrolü
     for key, response in religious_database.items():
         if key in norm_msg:
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#9c27b0;">İslami Tarih</span><br>{response}')
 
-    # 📜 Tarih Kontrolü
     for key, response in historical_events.items():
         if key.replace("ı", "i").replace("ğ", "g") in norm_msg:
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sozel">Tarih Bilgisi</span><br>{response}')
 
-    # 🌍 Coğrafya Kontrolü
     matched_countries = []
     for country, data in world_countries.items():
         if country in norm_msg:
@@ -1960,17 +1792,14 @@ def ask():
         save_log("CEVAPLANDI")
         return build_reply(f'<span class="expert-badge badge-cografya">Coğrafya</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}')
 
-    # 🤖 Kural tabanlı sistemde eşleşme bulunamadı — AI_API_KEY girilmişse
-    # gerçek bir yapay zekaya sorup daha akıllı/geniş kapsamlı cevap üretmeyi dene.
-    # 🧠 KONUŞMA HAFIZASI (EKLENTİ) — session'da tutulan son mesajlar AI'ya bağlam olarak veriliyor
     conversation_history = session.get('chat_history', [])
     ai_reply = ask_ai_fallback(raw_message, buddy_mode=is_buddy_mode, history=conversation_history)
     if ai_reply:
         save_log("CEVAPLANDI (AI)")
         conversation_history.append({"role": "user", "content": raw_message})
         conversation_history.append({"role": "assistant", "content": ai_reply})
-        session['chat_history'] = conversation_history[-10:]  # bellek şişmesin diye son 10 mesajla sınırla
-        ai_reply_formatted = format_code_blocks(ai_reply)  # 🩹 KOD YAMA (EKLENTİ) — kod bloklarını düzgün göster
+        session['chat_history'] = conversation_history[-10:]
+        ai_reply_formatted = format_code_blocks(ai_reply)
         return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#8e44ad;">Genişletilmiş Zeka</span><br>{ai_reply_formatted}')
 
     save_log("CEVAPLANAMADI")
