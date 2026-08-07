@@ -1526,7 +1526,7 @@ def get_logs():
     password = data.get('password', '')
     action = data.get('action', 'get')
 
-    if password != "4235":
+    if password != "4253":
         return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
 
     if action == 'clear':
@@ -1586,7 +1586,7 @@ def ask():
     if request.method == 'OPTIONS':
         return jsonify({"success": True}), 200, cors_headers
 
-    is_admin_test = request.json.get("admin_password") == "4235"
+    is_admin_test = request.json.get("admin_password") == "4253"
 
     if MAINTENANCE_MODE and not is_admin_test:
         return jsonify({"reply": MAINTENANCE_MESSAGE, "maintenance": True}), 200, cors_headers
