@@ -1293,7 +1293,7 @@ YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "on
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
-INSULT_WORDS = ["mal", "aptal", "salak", "geri zekalı", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek", "amq", "oc", "oe"]
+INSULT_WORDS = ["ahmak", "am", "amcık", "amık", "amk", "amq", "ananın", "aptal", "aq", "baba", "başak", "beyinsiz", "dalyarak", "dangalak", "daşşak", "domal", "gaval", "gavat", "geri zekalı", "gerzek", "godoş", "göt", "götelek", "götveren", "ibne", "mal", "oc", "oe", "orospu", "orospu çocuğu", "orospu evladı", "piç", "puşt", "salak", "sik", "sikiş", "sikm", "sikmek", "sikti", "siktir", "sokuş", "sürtük", "taşşak", "yarak", "yarrak"]
 
 # 😤 "DALGA MI GEÇİYORSUN" TÜRÜ SİNİRLİ İFADELER (EKLENTİ)
 FRUSTRATION_PHRASES = ["dalga mı geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mı buluyorsun"]
@@ -1697,7 +1697,6 @@ def ask():
         if is_buddy_mode:
             return build_reply("Naber kanka! ARIES AI hazır, ne soruyoruz? 😎")
         return build_reply("Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?")
-    return build_reply("Aleyküm selam, ben ARIES AI. Size nasıl yardımcı olabilirim?")
     
     if any(fuzzy_word_in(w, THANKS_WORDS, cutoff=0.75) for w in fixed_words):
         save_log("CEVAPLANDI")
