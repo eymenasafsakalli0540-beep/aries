@@ -1293,7 +1293,7 @@ YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "on
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
-INSULT_WORDS = ["mal", "aptal", "salak", "gerizekali", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek"]
+INSULT_WORDS = ["mal", "aptal", "salak", "geri zekali", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek", "amq", "oc", "oe"]
 
 # 😤 "DALGA MI GEÇİYORSUN" TÜRÜ SİNİRLİ İFADELER (EKLENTİ)
 FRUSTRATION_PHRASES = ["dalga mi geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mi buluyorsun"]
