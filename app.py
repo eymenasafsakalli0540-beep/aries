@@ -1293,10 +1293,10 @@ YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "on
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
-INSULT_WORDS = ["mal", "aptal", "salak", "geri zekali", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek", "amq", "oc", "oe"]
+INSULT_WORDS = ["mal", "aptal", "salak", "geri zekalı", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek", "amq", "oc", "oe"]
 
 # 😤 "DALGA MI GEÇİYORSUN" TÜRÜ SİNİRLİ İFADELER (EKLENTİ)
-FRUSTRATION_PHRASES = ["dalga mi geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mi buluyorsun"]
+FRUSTRATION_PHRASES = ["dalga mı geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mı buluyorsun"]
 
 # 🗣️ "DO YOU SPEAK ENGLISH/RUSSIAN" TÜRÜ DİL SORULARI
 LANGUAGE_PHRASES = {
@@ -1697,7 +1697,8 @@ def ask():
         if is_buddy_mode:
             return build_reply("Naber kanka! ARIES AI hazır, ne soruyoruz? 😎")
         return build_reply("Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?")
-
+    return build_reply("Aleyküm selam, ben ARIES AI. Size nasıl yardımcı olabilirim?")
+    
     if any(fuzzy_word_in(w, THANKS_WORDS, cutoff=0.75) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
