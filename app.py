@@ -7,6 +7,7 @@ import requests
 import os
 import re
 import html
+import json, uuid
 from difflib import get_close_matches
 from datetime import datetime, timedelta
 
