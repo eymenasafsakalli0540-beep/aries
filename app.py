@@ -271,6 +271,7 @@ def save_visitors(visitors):
 def record_visitor(ip, device, question):
     visitors = load_visitors()
     visitors.append({
+        "id": uuid.uuid4().hex,
         "ip": ip,
         "device": device or "",
         "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -352,6 +353,21 @@ def recent_visitors():
     if data.get('password') != ADMIN_PASSWORD:
         return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
 
+    action = data.get('action', 'list')
+
+    if action == 'clear':
+        save_visitors([])
+        return jsonify({"success": True, "visitors": []}), 200, response_headers
+
+    if action == 'delete':
+        visitor_id = data.get('id')
+        visitors = load_visitors()
+        new_visitors = [v for v in visitors if v.get('id') != visitor_id]
+        if len(new_visitors) == len(visitors):
+            return jsonify({"success": False, "message": "Ziyaretçi kaydı bulunamadı."}), 404, response_headers
+        save_visitors(new_visitors)
+        return jsonify({"success": True}), 200, response_headers
+
     visitors = load_visitors()
     bans = _cleanup_bans(load_bans())
     banned_ips = {b['value'] for b in bans.values() if b.get('kind') == 'ip'}
@@ -362,6 +378,7 @@ def recent_visitors():
         v_ip = v.get("ip", "")
         v_device = v.get("device", "")
         out.append({
+            "id": v.get("id", ""),
             "ip": v_ip,
             "device": v_device,
             "time": v.get("time", ""),
