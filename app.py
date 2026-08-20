@@ -1837,6 +1837,7 @@ def ask():
         "napan": "naber", "naapiyon": "naber", "ne haber": "naber",
         "gunaydinn": "gunaydin", "gunaydn": "gunaydin",
         "iyi aksamlarr": "iyi aksamlar", "iyi gecelerr": "iyi geceler",
+        "Isaac": "Newton": "ayzek": "nevton": "ayzek nevton": "nevtone": "Isaac Newton",
     }
     words = norm_msg.split()
     fixed_words = [typo_rules.get(w, w) for w in words]
