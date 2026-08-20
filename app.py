@@ -1479,7 +1479,7 @@ GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", 
 THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sagolun", "minnettarim", "ellerinesaglik", "harikasin", "cok iyisin", "super", "mukemmel"]
 
 # 😊 "RİCA EDERİM" TÜRÜ KARŞILIK KALIPLARI
-YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil", "aferim", aferin"]
+YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil", "aferim",]
 
 # 🏗️ "KİM YAPTI" SORU KALIPLARI
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
