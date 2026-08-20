@@ -197,6 +197,180 @@ else:
     MAINTENANCE_MODE = _load_maintenance_state()
 
 
+# --------------------------------------------------------------------------
+# 🚫 KARA LİSTE / BANLAMA SİSTEMİ (EKLENTİ)
+# --------------------------------------------------------------------------
+BANS_FILE = "bans.json"
+VISITORS_FILE = "visitors.json"
+MAX_VISITORS = 50
+ADMIN_PASSWORD = "4275"
+
+
+def _load_json_file(path, default):
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return default
+    return default
+
+
+def _save_json_file(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def load_bans():
+    return _load_json_file(BANS_FILE, {})
+
+
+def save_bans(bans):
+    _save_json_file(BANS_FILE, bans)
+
+
+def _is_ban_active(ban):
+    until = ban.get("until")
+    if not until:
+        return True
+    try:
+        return datetime.fromisoformat(until) > datetime.now()
+    except Exception:
+        return True
+
+
+def _cleanup_bans(bans):
+    changed = False
+    for key in list(bans.keys()):
+        if not _is_ban_active(bans[key]):
+            del bans[key]
+            changed = True
+    if changed:
+        save_bans(bans)
+    return bans
+
+
+def get_active_ban(ip=None, device=None):
+    bans = _cleanup_bans(load_bans())
+    for b in bans.values():
+        if b.get("kind") == "ip" and ip and b.get("value") == ip:
+            return b
+        if b.get("kind") == "device" and device and b.get("value") == device:
+            return b
+    return None
+
+
+def load_visitors():
+    return _load_json_file(VISITORS_FILE, [])
+
+
+def save_visitors(visitors):
+    _save_json_file(VISITORS_FILE, visitors)
+
+
+def record_visitor(ip, device, question):
+    visitors = load_visitors()
+    visitors.append({
+        "ip": ip,
+        "device": device or "",
+        "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "question": (question or "")[:200],
+    })
+    visitors = visitors[-MAX_VISITORS:]
+    save_visitors(visitors)
+
+
+@app.route('/api/banlist', methods=['POST', 'OPTIONS'])
+def banlist():
+    response_headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    }
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200, response_headers
+
+    data = request.json or {}
+    if data.get('password') != ADMIN_PASSWORD:
+        return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
+
+    action = data.get('action', 'list')
+    bans = _cleanup_bans(load_bans())
+
+    if action == 'list':
+        return jsonify({"success": True, "bans": bans}), 200, response_headers
+
+    if action == 'ban':
+        kind = data.get('kind')
+        value = (data.get('value') or '').strip()
+        reason = (data.get('reason') or '').strip()
+        duration = data.get('duration_minutes')
+
+        if kind not in ('ip', 'device') or not value:
+            return jsonify({"success": False, "message": "Geçersiz kind/value."}), 400, response_headers
+
+        until = None
+        if duration not in (None, ''):
+            try:
+                until = (datetime.now() + timedelta(minutes=float(duration))).isoformat()
+            except Exception:
+                until = None
+
+        key = f"{kind}:{value}"
+        bans[key] = {
+            "kind": kind,
+            "value": value,
+            "reason": reason,
+            "until": until,
+            "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        save_bans(bans)
+        return jsonify({"success": True, "bans": bans}), 200, response_headers
+
+    if action == 'unban':
+        key = data.get('key')
+        if key in bans:
+            del bans[key]
+            save_bans(bans)
+            return jsonify({"success": True, "bans": bans}), 200, response_headers
+        return jsonify({"success": False, "message": "Ban bulunamadı."}), 404, response_headers
+
+    return jsonify({"success": False, "message": "Bilinmeyen işlem."}), 400, response_headers
+
+
+@app.route('/api/recent-visitors', methods=['POST', 'OPTIONS'])
+def recent_visitors():
+    response_headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    }
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200, response_headers
+
+    data = request.json or {}
+    if data.get('password') != ADMIN_PASSWORD:
+        return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
+
+    visitors = load_visitors()
+    bans = _cleanup_bans(load_bans())
+    banned_ips = {b['value'] for b in bans.values() if b.get('kind') == 'ip'}
+    banned_devices = {b['value'] for b in bans.values() if b.get('kind') == 'device'}
+
+    out = []
+    for v in reversed(visitors):
+        v_ip = v.get("ip", "")
+        v_device = v.get("device", "")
+        out.append({
+            "ip": v_ip,
+            "device": v_device,
+            "time": v.get("time", ""),
+            "question": v.get("question", ""),
+            "is_banned": (v_ip in banned_ips) or (bool(v_device) and v_device in banned_devices),
+        })
+    return jsonify({"success": True, "visitors": out}), 200, response_headers
+
+
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -1610,6 +1784,18 @@ def ask():
     def save_log(status_msg):
         with open("sorular.txt", "a", encoding="utf-8") as file:
             file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
+
+    device_id = (request.json.get("device_id") or "").strip()
+    record_visitor(user_ip, device_id, raw_message)
+
+    active_ban = get_active_ban(ip=user_ip, device=device_id or None)
+    if active_ban and not is_admin_test:
+        save_log(f"ENGELLENDI (BANLI-{active_ban.get('kind', '').upper()})")
+        ban_reason = active_ban.get("reason") or ""
+        reply_text = "🚫 Erişimin kısıtlandı, bu IP/cihaz kara listeye alınmış."
+        if ban_reason:
+            reply_text += f" Sebep: {ban_reason}"
+        return jsonify({"reply": reply_text, "banned": True}), 200, cors_headers
 
     user_message = re.sub(r'[.,\?!;\(\)"\'’\-]', '', user_message)
     norm_msg = user_message.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
