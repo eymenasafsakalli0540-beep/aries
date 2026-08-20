@@ -1470,8 +1470,7 @@ physics_geometry_database = {
     "silindir": "<b>Geometri - Silindir:</b> Alt ve üst tabanı birbirine eş iki daireden oluşan geometrik cisimdir. Hacmi: $V = \\pi r^2 \\cdot h$, yanal alanı: $2\\pi r \\cdot h$ formülüyle bulunur.",
     "koni": "<b>Geometri - Koni:</b> Dairesel bir taban ve bu taban düzleminin dışındaki bir tepe noktasını birleştiren doğruların oluşturduğu cisimdir. Hacmi: $V = \\frac{1}{3} \\pi r^2 \\cdot h$'tır.",
     "küre": "<b>Geometri - Küre:</b> Uzayda sabit bir noktadan eşit uzaklıktaki noktaların oluşturduğu üç boyutlu geometrik şekildir. Hacmi $V = \\frac{4}{3} \\pi r^3$, yüzey alanı $A = 4\\pi r^2$ formülüyle bulunur.",
-    "Isaac Newton": "<b>Fizikçi ve matematikçi - Isaac Newton:</b> Isaac Newton bir Fizikçi ve matematikçidir kendisinin en büyük bülüşü yer çekimidir.",
-}
+    }
 
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
 GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi", "hello", "selaminaleykum", "aleykumselam", "gunaydin", "iyi gunler", "iyi aksamlar"]
@@ -1483,7 +1482,7 @@ THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sa
 YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil", "aferim", aferin"]
 
 # 🏗️ "KİM YAPTI" SORU KALIPLARI
-CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
+CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi", "seni kim yapti"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
 INSULT_WORDS = ["ahmak", "am", "amcık", "amık", "amk", "amq", "ananın", "aptal", "aq", "baba", "başak", "beyinsiz", "dalyarak", "dangalak", "daşşak", "domal", "gaval", "gavat", "geri zekalı", "gerzek", "godoş", "göt", "götelek", "götveren", "ibne", "mal", "oc", "oe", "orospu", "orospu çocuğu", "orospu evladı", "piç", "puşt", "salak", "sik", "sikiş", "sikm", "sikmek", "sikti", "siktir", "sokuş", "sürtük", "taşşak", "yarak", "yarrak"]
