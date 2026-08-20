@@ -1482,7 +1482,7 @@ THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sa
 YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil", "aferim", aferin"]
 
 # 🏗️ "KİM YAPTI" SORU KALIPLARI
-CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi", "seni kim yapti"]
+CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
 INSULT_WORDS = ["ahmak", "am", "amcık", "amık", "amk", "amq", "ananın", "aptal", "aq", "baba", "başak", "beyinsiz", "dalyarak", "dangalak", "daşşak", "domal", "gaval", "gavat", "geri zekalı", "gerzek", "godoş", "göt", "götelek", "götveren", "ibne", "mal", "oc", "oe", "orospu", "orospu çocuğu", "orospu evladı", "piç", "puşt", "salak", "sik", "sikiş", "sikm", "sikmek", "sikti", "siktir", "sokuş", "sürtük", "taşşak", "yarak", "yarrak"]
