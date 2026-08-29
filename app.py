@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect
+from werkzeug.security import generate_password_hash, check_password_hash
 
 import ast
 import operator
@@ -32,6 +33,23 @@ app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
 
 # 🕒 KALICI OTURUM (EKLENTİ)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+
+# 🌐 GERÇEK ZİYARETÇİ IP'Sİ (EKLENTİ)
+# Render (ve Cloudflare, nginx, vb.) bir proxy arkasında çalıştığından
+# request.remote_addr HER ZAMAN proxy'nin kendi iç IP'sini döndürür (ör. 127.0.0.1),
+# gerçek ziyaretçinin IP'sini DEĞİL. Bu yüzden bir kişiyi banlamak herkesi banlıyordu.
+# Gerçek IP, proxy tarafından eklenen X-Forwarded-For başlığındaki İLK adrestir.
+def get_client_ip():
+    forwarded_for = request.headers.get('X-Forwarded-For', '')
+    if forwarded_for:
+        first_ip = forwarded_for.split(',')[0].strip()
+        if first_ip:
+            return first_ip
+    real_ip = request.headers.get('X-Real-IP', '').strip()
+    if real_ip:
+        return real_ip
+    return request.remote_addr or 'bilinmiyor'
 
 
 @app.before_request
@@ -91,13 +109,109 @@ def logout_google():
 @app.route('/api/auth-status')
 def auth_status():
     user = session.get('google_user')
+    local_user = session.get('local_user')
+    active_user = user or local_user
     return jsonify({
-        "logged_in": bool(user),
-        "user": user,
+        "logged_in": bool(active_user),
+        "user": active_user,
+        "login_method": "google" if user else ("local" if local_user else None),
         "google_login_enabled": GOOGLE_LOGIN_ENABLED,
+        "local_login_enabled": True,
         "guest_message_count": session.get('guest_message_count', 0),
         "guest_message_limit": GUEST_MESSAGE_LIMIT,
     })
+
+
+# --------------------------------------------------------------------------
+# 👤 E-POSTA / ŞİFRE İLE HESAP SİSTEMİ (EKLENTİ)
+# Google OAuth kurulu değilse (GOOGLE_CLIENT_ID/SECRET tanımsızsa) hesap
+# butonu hiç görünmüyordu. Bu, Google'a bağımlı olmayan, her zaman çalışan
+# bir alternatif giriş/kayıt yöntemi sağlıyor.
+# --------------------------------------------------------------------------
+USERS_FILE = "users.json"
+
+
+def load_users():
+    return _load_json_file(USERS_FILE, {})
+
+
+def save_users(users):
+    _save_json_file(USERS_FILE, users)
+
+
+@app.route('/api/register', methods=['POST', 'OPTIONS'])
+def register():
+    response_headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    }
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200, response_headers
+
+    data = request.json or {}
+    name = (data.get('name') or '').strip()
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+
+    if not email or '@' not in email:
+        return jsonify({"success": False, "message": "Geçerli bir e-posta gir."}), 400, response_headers
+    if len(password) < 4:
+        return jsonify({"success": False, "message": "Şifre en az 4 karakter olmalı."}), 400, response_headers
+    if not name:
+        name = email.split('@')[0]
+
+    users = load_users()
+    if email in users:
+        return jsonify({"success": False, "message": "Bu e-posta ile zaten bir hesap var."}), 409, response_headers
+
+    users[email] = {
+        "name": name,
+        "password_hash": generate_password_hash(password),
+        "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    }
+    save_users(users)
+
+    session['local_user'] = {"email": email, "name": name, "picture": None}
+    session['guest_message_count'] = 0
+    return jsonify({"success": True, "user": session['local_user']}), 200, response_headers
+
+
+@app.route('/api/login', methods=['POST', 'OPTIONS'])
+def login_local():
+    response_headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    }
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200, response_headers
+
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    password = data.get('password') or ''
+
+    users = load_users()
+    account = users.get(email)
+    if not account or not check_password_hash(account.get('password_hash', ''), password):
+        return jsonify({"success": False, "message": "E-posta veya şifre hatalı."}), 401, response_headers
+
+    session['local_user'] = {"email": email, "name": account.get('name', email), "picture": None}
+    session['guest_message_count'] = 0
+    return jsonify({"success": True, "user": session['local_user']}), 200, response_headers
+
+
+@app.route('/api/logout-local', methods=['POST', 'OPTIONS'])
+def logout_local():
+    response_headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    }
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200, response_headers
+    session.pop('local_user', None)
+    return jsonify({"success": True}), 200, response_headers
 
 # --------------------------------------------------------------------------
 # 🖥️ BİLGİSAYAR AJANI ALTYAPISI (EKLENTİ) — SINIRLI VE KONTROLLÜ
@@ -250,12 +364,16 @@ def _cleanup_bans(bans):
     return bans
 
 
-def get_active_ban(ip=None, device=None):
+def get_active_ban(ip=None, device=None, email=None):
     bans = _cleanup_bans(load_bans())
     for b in bans.values():
         if b.get("kind") == "ip" and ip and b.get("value") == ip:
             return b
         if b.get("kind") == "device" and device and b.get("value") == device:
+            return b
+        # 📧 E-posta ile banlama (EKLENTİ) — Google girişi yapan kullanıcılar için
+        # IP'den çok daha güvenilir: IP paylaşılabilir/değişebilir, e-posta kişiye özeldir.
+        if b.get("kind") == "email" and email and b.get("value", "").lower() == email.lower():
             return b
     return None
 
@@ -268,12 +386,13 @@ def save_visitors(visitors):
     _save_json_file(VISITORS_FILE, visitors)
 
 
-def record_visitor(ip, device, question):
+def record_visitor(ip, device, question, email=None):
     visitors = load_visitors()
     visitors.append({
         "id": uuid.uuid4().hex,
         "ip": ip,
         "device": device or "",
+        "email": email or "",
         "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         "question": (question or "")[:200],
     })
@@ -307,8 +426,11 @@ def banlist():
         reason = (data.get('reason') or '').strip()
         duration = data.get('duration_minutes')
 
-        if kind not in ('ip', 'device') or not value:
+        if kind not in ('ip', 'device', 'email') or not value:
             return jsonify({"success": False, "message": "Geçersiz kind/value."}), 400, response_headers
+
+        if kind == 'email':
+            value = value.lower()  # e-posta karşılaştırmaları büyük/küçük harf duyarsız
 
         until = None
         if duration not in (None, ''):
@@ -372,18 +494,21 @@ def recent_visitors():
     bans = _cleanup_bans(load_bans())
     banned_ips = {b['value'] for b in bans.values() if b.get('kind') == 'ip'}
     banned_devices = {b['value'] for b in bans.values() if b.get('kind') == 'device'}
+    banned_emails = {b['value'].lower() for b in bans.values() if b.get('kind') == 'email'}
 
     out = []
     for v in reversed(visitors):
         v_ip = v.get("ip", "")
         v_device = v.get("device", "")
+        v_email = v.get("email", "")
         out.append({
             "id": v.get("id", ""),
             "ip": v_ip,
             "device": v_device,
+            "email": v_email,
             "time": v.get("time", ""),
             "question": v.get("question", ""),
-            "is_banned": (v_ip in banned_ips) or (bool(v_device) and v_device in banned_devices),
+            "is_banned": (v_ip in banned_ips) or (bool(v_device) and v_device in banned_devices) or (bool(v_email) and v_email.lower() in banned_emails),
         })
     return jsonify({"success": True, "visitors": out}), 200, response_headers
 
@@ -1470,7 +1595,7 @@ physics_geometry_database = {
     "silindir": "<b>Geometri - Silindir:</b> Alt ve üst tabanı birbirine eş iki daireden oluşan geometrik cisimdir. Hacmi: $V = \\pi r^2 \\cdot h$, yanal alanı: $2\\pi r \\cdot h$ formülüyle bulunur.",
     "koni": "<b>Geometri - Koni:</b> Dairesel bir taban ve bu taban düzleminin dışındaki bir tepe noktasını birleştiren doğruların oluşturduğu cisimdir. Hacmi: $V = \\frac{1}{3} \\pi r^2 \\cdot h$'tır.",
     "küre": "<b>Geometri - Küre:</b> Uzayda sabit bir noktadan eşit uzaklıktaki noktaların oluşturduğu üç boyutlu geometrik şekildir. Hacmi $V = \\frac{4}{3} \\pi r^3$, yüzey alanı $A = 4\\pi r^2$ formülüyle bulunur.",
-    }
+}
 
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
 GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi", "hello", "selaminaleykum", "aleykumselam", "gunaydin", "iyi gunler", "iyi aksamlar"]
@@ -1479,7 +1604,7 @@ GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", 
 THANKS_WORDS = ["tesekkurler", "tesekkur", "sagol", "sagolasin", "eyvallah", "sagolun", "minnettarim", "ellerinesaglik", "harikasin", "cok iyisin", "super", "mukemmel"]
 
 # 😊 "RİCA EDERİM" TÜRÜ KARŞILIK KALIPLARI
-YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil", "aferim",]
+YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "onemlidegil"]
 
 # 🏗️ "KİM YAPTI" SORU KALIPLARI
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
@@ -1783,12 +1908,12 @@ def ask():
     if MAINTENANCE_MODE and not is_admin_test:
         return jsonify({"reply": MAINTENANCE_MESSAGE, "maintenance": True}), 200, cors_headers
 
-    if GOOGLE_LOGIN_ENABLED and not is_admin_test and not session.get('google_user'):
+    if GOOGLE_LOGIN_ENABLED and not is_admin_test and not session.get('google_user') and not session.get('local_user'):
         current_count = session.get('guest_message_count', 0)
         if current_count >= GUEST_MESSAGE_LIMIT:
             return jsonify({
                 "reply": f"💬 Misafir kullanıcılar için {GUEST_MESSAGE_LIMIT} mesajlık ücretsiz sınıra ulaştın. "
-                         f"Devam etmek için lütfen Google ile giriş yap.",
+                         f"Devam etmek için lütfen giriş yap.",
                 "limit_reached": True
             }), 200, cors_headers
         session['guest_message_count'] = current_count + 1
@@ -1796,20 +1921,23 @@ def ask():
     user_message = request.json.get("message", "").lower().strip()
     raw_message = request.json.get("message", "").strip()
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    user_ip = request.remote_addr
+    user_ip = get_client_ip()
+
+    user_email = (session.get('google_user') or session.get('local_user') or {}).get('email', '')
 
     def save_log(status_msg):
         with open("sorular.txt", "a", encoding="utf-8") as file:
-            file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
+            email_part = f" | E-POSTA: {user_email}" if user_email else ""
+            file.write(f"[{current_time}] IP: {user_ip}{email_part} | DURUM: {status_msg} -> Soru: {raw_message}\n")
 
     device_id = (request.json.get("device_id") or "").strip()
-    record_visitor(user_ip, device_id, raw_message)
+    record_visitor(user_ip, device_id, raw_message, email=user_email)
 
-    active_ban = get_active_ban(ip=user_ip, device=device_id or None)
+    active_ban = get_active_ban(ip=user_ip, device=device_id or None, email=user_email or None)
     if active_ban and not is_admin_test:
         save_log(f"ENGELLENDI (BANLI-{active_ban.get('kind', '').upper()})")
         ban_reason = active_ban.get("reason") or ""
-        reply_text = "🚫 Erişimin kısıtlandı, bu IP/cihaz kara listeye alınmış."
+        reply_text = "🚫 Erişimin kısıtlandı, bu hesap/IP/cihaz kara listeye alınmış."
         if ban_reason:
             reply_text += f" Sebep: {ban_reason}"
         return jsonify({"reply": reply_text, "banned": True}), 200, cors_headers
