@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify, session, redirect
-from werkzeug.security import generate_password_hash, check_password_hash
 
 import ast
 import operator
@@ -8,7 +7,10 @@ import requests
 import os
 import re
 import html
-import json, uuid
+import json
+import uuid
+import random
+import hmac
 from difflib import get_close_matches
 from datetime import datetime, timedelta
 
@@ -35,26 +37,123 @@ app.secret_key = os.environ.get("SECRET_KEY", "aries-ai-cok-gizli-anahtar-2026")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 
-# 🌐 GERÇEK ZİYARETÇİ IP'Sİ (EKLENTİ)
-# Render (ve Cloudflare, nginx, vb.) bir proxy arkasında çalıştığından
-# request.remote_addr HER ZAMAN proxy'nin kendi iç IP'sini döndürür (ör. 127.0.0.1),
-# gerçek ziyaretçinin IP'sini DEĞİL. Bu yüzden bir kişiyi banlamak herkesi banlıyordu.
-# Gerçek IP, proxy tarafından eklenen X-Forwarded-For başlığındaki İLK adrestir.
-def get_client_ip():
-    forwarded_for = request.headers.get('X-Forwarded-For', '')
-    if forwarded_for:
-        first_ip = forwarded_for.split(',')[0].strip()
-        if first_ip:
-            return first_ip
-    real_ip = request.headers.get('X-Real-IP', '').strip()
-    if real_ip:
-        return real_ip
-    return request.remote_addr or 'bilinmiyor'
-
-
 @app.before_request
 def _make_session_permanent():
     session.permanent = True
+
+# --------------------------------------------------------------------------
+# 🗂️ ESKİ SOHBETLERİ GÖRÜNTÜLEME (EKLENTİ)
+# Her kullanıcı (Google ile girişliyse e-postasına, misafirse tarayıcıya özel
+# kalıcı bir kimliğe göre) kendi sohbet geçmişini diskte JSON dosyası olarak
+# saklar. Böylece sayfa yenilense veya farklı zamanda dönülse bile geçmiş
+# sorular/cevaplar görüntülenebilir.
+# --------------------------------------------------------------------------
+CHAT_HISTORY_DIR = os.environ.get("CHAT_HISTORY_DIR", "chat_logs")
+os.makedirs(CHAT_HISTORY_DIR, exist_ok=True)
+CHAT_HISTORY_MAX_ITEMS = 200
+
+
+def get_user_key():
+    """Kullanıcıyı benzersiz şekilde tanımlayan, dosya adı olarak güvenli bir anahtar üretir."""
+    google_user = session.get('google_user')
+    if google_user and google_user.get('email'):
+        safe_email = re.sub(r'[^a-zA-Z0-9_.-]', '_', google_user['email'])
+        return f"g_{safe_email}"
+    if 'guest_id' not in session:
+        session['guest_id'] = uuid.uuid4().hex
+    return f"misafir_{session['guest_id']}"
+
+
+def _chat_history_path(user_key):
+    safe_key = re.sub(r'[^a-zA-Z0-9_.-]', '_', user_key)
+    return os.path.join(CHAT_HISTORY_DIR, f"{safe_key}.json")
+
+
+def append_chat_history(user_key, question, answer_html):
+    if not question:
+        return
+    path = _chat_history_path(user_key)
+    history = []
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except Exception:
+            history = []
+    plain_answer = re.sub(r'<[^>]+>', '', answer_html or "").strip()
+    history.append({
+        "soru": question[:1000],
+        "cevap": plain_answer[:2000],
+        "zaman": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    })
+    history = history[-CHAT_HISTORY_MAX_ITEMS:]
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def load_chat_history(user_key, limit=100):
+    path = _chat_history_path(user_key)
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            history = json.load(f)
+        return history[-limit:]
+    except Exception:
+        return []
+
+
+@app.route('/api/chat-history', methods=['GET', 'POST', 'OPTIONS'])
+def chat_history_endpoint():
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200
+
+    user_key = get_user_key()
+
+    if request.method == 'POST':
+        payload = request.get_json(silent=True) or {}
+        if payload.get('action') == 'clear':
+            path = _chat_history_path(user_key)
+            if os.path.exists(path):
+                os.remove(path)
+            return jsonify({"success": True, "cleared": True})
+
+    history = load_chat_history(user_key, limit=100)
+    return jsonify({"success": True, "history": list(reversed(history))})
+
+
+# --------------------------------------------------------------------------
+# 🎨 ÖZELLEŞTİRİLEBİLİR ARAYÜZ (EKLENTİ)
+# Tema, vurgu rengi, yazı boyutu gibi tercihler kullanıcı oturumunda (30 gün
+# kalıcı) saklanır. Arayüz (index.html/JS), sayfa açılışında bu uç noktadan
+# tercihleri çekip CSS değişkenlerine uygulayabilir.
+# --------------------------------------------------------------------------
+DEFAULT_UI_PREFERENCES = {
+    "theme": "dark",          # "dark" | "light"
+    "accent_color": "#8e44ad",
+    "font_size": "medium",    # "small" | "medium" | "large"
+    "bubble_style": "rounded"  # "rounded" | "square"
+}
+
+
+@app.route('/api/preferences', methods=['GET', 'POST', 'OPTIONS'])
+def preferences_endpoint():
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200
+
+    if request.method == 'POST':
+        payload = request.get_json(silent=True) or {}
+        prefs = session.get('ui_preferences', dict(DEFAULT_UI_PREFERENCES))
+        for key in DEFAULT_UI_PREFERENCES:
+            if key in payload and isinstance(payload[key], str) and len(payload[key]) <= 30:
+                prefs[key] = payload[key]
+        session['ui_preferences'] = prefs
+        return jsonify({"success": True, "preferences": prefs})
+
+    return jsonify({"success": True, "preferences": session.get('ui_preferences', DEFAULT_UI_PREFERENCES)})
 
 # --------------------------------------------------------------------------
 # 🔑 GOOGLE İLE GİRİŞ + GİRİŞ YAPMAYANLARA MESAJ SINIRI (EKLENTİ)
@@ -109,114 +208,27 @@ def logout_google():
 @app.route('/api/auth-status')
 def auth_status():
     user = session.get('google_user')
-    local_user = session.get('local_user')
-    active_user = user or local_user
     return jsonify({
-        "logged_in": bool(active_user),
-        "user": active_user,
-        "login_method": "google" if user else ("local" if local_user else None),
+        "logged_in": bool(user),
+        "user": user,
         "google_login_enabled": GOOGLE_LOGIN_ENABLED,
-        "local_login_enabled": True,
         "guest_message_count": session.get('guest_message_count', 0),
         "guest_message_limit": GUEST_MESSAGE_LIMIT,
     })
-
-
-# --------------------------------------------------------------------------
-# 👤 E-POSTA / ŞİFRE İLE HESAP SİSTEMİ (EKLENTİ)
-# Google OAuth kurulu değilse (GOOGLE_CLIENT_ID/SECRET tanımsızsa) hesap
-# butonu hiç görünmüyordu. Bu, Google'a bağımlı olmayan, her zaman çalışan
-# bir alternatif giriş/kayıt yöntemi sağlıyor.
-# --------------------------------------------------------------------------
-USERS_FILE = "users.json"
-
-
-def load_users():
-    return _load_json_file(USERS_FILE, {})
-
-
-def save_users(users):
-    _save_json_file(USERS_FILE, users)
-
-
-@app.route('/api/register', methods=['POST', 'OPTIONS'])
-def register():
-    response_headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
-    if request.method == 'OPTIONS':
-        return jsonify({"success": True}), 200, response_headers
-
-    data = request.json or {}
-    name = (data.get('name') or '').strip()
-    email = (data.get('email') or '').strip().lower()
-    password = data.get('password') or ''
-
-    if not email or '@' not in email:
-        return jsonify({"success": False, "message": "Geçerli bir e-posta gir."}), 400, response_headers
-    if len(password) < 4:
-        return jsonify({"success": False, "message": "Şifre en az 4 karakter olmalı."}), 400, response_headers
-    if not name:
-        name = email.split('@')[0]
-
-    users = load_users()
-    if email in users:
-        return jsonify({"success": False, "message": "Bu e-posta ile zaten bir hesap var."}), 409, response_headers
-
-    users[email] = {
-        "name": name,
-        "password_hash": generate_password_hash(password),
-        "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-    }
-    save_users(users)
-
-    session['local_user'] = {"email": email, "name": name, "picture": None}
-    session['guest_message_count'] = 0
-    return jsonify({"success": True, "user": session['local_user']}), 200, response_headers
-
-
-@app.route('/api/login', methods=['POST', 'OPTIONS'])
-def login_local():
-    response_headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
-    if request.method == 'OPTIONS':
-        return jsonify({"success": True}), 200, response_headers
-
-    data = request.json or {}
-    email = (data.get('email') or '').strip().lower()
-    password = data.get('password') or ''
-
-    users = load_users()
-    account = users.get(email)
-    if not account or not check_password_hash(account.get('password_hash', ''), password):
-        return jsonify({"success": False, "message": "E-posta veya şifre hatalı."}), 401, response_headers
-
-    session['local_user'] = {"email": email, "name": account.get('name', email), "picture": None}
-    session['guest_message_count'] = 0
-    return jsonify({"success": True, "user": session['local_user']}), 200, response_headers
-
-
-@app.route('/api/logout-local', methods=['POST', 'OPTIONS'])
-def logout_local():
-    response_headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
-    if request.method == 'OPTIONS':
-        return jsonify({"success": True}), 200, response_headers
-    session.pop('local_user', None)
-    return jsonify({"success": True}), 200, response_headers
 
 # --------------------------------------------------------------------------
 # 🖥️ BİLGİSAYAR AJANI ALTYAPISI (EKLENTİ) — SINIRLI VE KONTROLLÜ
 # --------------------------------------------------------------------------
 AGENT_SECRET = os.environ.get("AGENT_SECRET", "")
+
+# ⚠️ GÜVENLİK DÜZELTMESİ: panel şifresi artık ortam değişkeninden okunuyor
+# (yoksa eski varsayılana düşer) ve zamanlama saldırılarına karşı
+# hmac.compare_digest ile karşılaştırılıyor.
+ADMIN_PANEL_PASSWORD = os.environ.get("ADMIN_PANEL_PASSWORD", "4235")
+
+
+def _secure_compare(a, b):
+    return hmac.compare_digest(str(a or ""), str(b or ""))
 
 APP_CLOSE_WHITELIST = {
     "chrome": "chrome.exe",
@@ -311,208 +323,6 @@ else:
     MAINTENANCE_MODE = _load_maintenance_state()
 
 
-# --------------------------------------------------------------------------
-# 🚫 KARA LİSTE / BANLAMA SİSTEMİ (EKLENTİ)
-# --------------------------------------------------------------------------
-BANS_FILE = "bans.json"
-VISITORS_FILE = "visitors.json"
-MAX_VISITORS = 50
-ADMIN_PASSWORD = "4275"
-
-
-def _load_json_file(path, default):
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return default
-    return default
-
-
-def _save_json_file(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def load_bans():
-    return _load_json_file(BANS_FILE, {})
-
-
-def save_bans(bans):
-    _save_json_file(BANS_FILE, bans)
-
-
-def _is_ban_active(ban):
-    until = ban.get("until")
-    if not until:
-        return True
-    try:
-        return datetime.fromisoformat(until) > datetime.now()
-    except Exception:
-        return True
-
-
-def _cleanup_bans(bans):
-    changed = False
-    for key in list(bans.keys()):
-        if not _is_ban_active(bans[key]):
-            del bans[key]
-            changed = True
-    if changed:
-        save_bans(bans)
-    return bans
-
-
-def get_active_ban(ip=None, device=None, email=None):
-    bans = _cleanup_bans(load_bans())
-    for b in bans.values():
-        if b.get("kind") == "ip" and ip and b.get("value") == ip:
-            return b
-        if b.get("kind") == "device" and device and b.get("value") == device:
-            return b
-        # 📧 E-posta ile banlama (EKLENTİ) — Google girişi yapan kullanıcılar için
-        # IP'den çok daha güvenilir: IP paylaşılabilir/değişebilir, e-posta kişiye özeldir.
-        if b.get("kind") == "email" and email and b.get("value", "").lower() == email.lower():
-            return b
-    return None
-
-
-def load_visitors():
-    return _load_json_file(VISITORS_FILE, [])
-
-
-def save_visitors(visitors):
-    _save_json_file(VISITORS_FILE, visitors)
-
-
-def record_visitor(ip, device, question, email=None):
-    visitors = load_visitors()
-    visitors.append({
-        "id": uuid.uuid4().hex,
-        "ip": ip,
-        "device": device or "",
-        "email": email or "",
-        "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        "question": (question or "")[:200],
-    })
-    visitors = visitors[-MAX_VISITORS:]
-    save_visitors(visitors)
-
-
-@app.route('/api/banlist', methods=['POST', 'OPTIONS'])
-def banlist():
-    response_headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
-    if request.method == 'OPTIONS':
-        return jsonify({"success": True}), 200, response_headers
-
-    data = request.json or {}
-    if data.get('password') != ADMIN_PASSWORD:
-        return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
-
-    action = data.get('action', 'list')
-    bans = _cleanup_bans(load_bans())
-
-    if action == 'list':
-        return jsonify({"success": True, "bans": bans}), 200, response_headers
-
-    if action == 'ban':
-        kind = data.get('kind')
-        value = (data.get('value') or '').strip()
-        reason = (data.get('reason') or '').strip()
-        duration = data.get('duration_minutes')
-
-        if kind not in ('ip', 'device', 'email') or not value:
-            return jsonify({"success": False, "message": "Geçersiz kind/value."}), 400, response_headers
-
-        if kind == 'email':
-            value = value.lower()  # e-posta karşılaştırmaları büyük/küçük harf duyarsız
-
-        until = None
-        if duration not in (None, ''):
-            try:
-                until = (datetime.now() + timedelta(minutes=float(duration))).isoformat()
-            except Exception:
-                until = None
-
-        key = f"{kind}:{value}"
-        bans[key] = {
-            "kind": kind,
-            "value": value,
-            "reason": reason,
-            "until": until,
-            "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        }
-        save_bans(bans)
-        return jsonify({"success": True, "bans": bans}), 200, response_headers
-
-    if action == 'unban':
-        key = data.get('key')
-        if key in bans:
-            del bans[key]
-            save_bans(bans)
-            return jsonify({"success": True, "bans": bans}), 200, response_headers
-        return jsonify({"success": False, "message": "Ban bulunamadı."}), 404, response_headers
-
-    return jsonify({"success": False, "message": "Bilinmeyen işlem."}), 400, response_headers
-
-
-@app.route('/api/recent-visitors', methods=['POST', 'OPTIONS'])
-def recent_visitors():
-    response_headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
-    }
-    if request.method == 'OPTIONS':
-        return jsonify({"success": True}), 200, response_headers
-
-    data = request.json or {}
-    if data.get('password') != ADMIN_PASSWORD:
-        return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
-
-    action = data.get('action', 'list')
-
-    if action == 'clear':
-        save_visitors([])
-        return jsonify({"success": True, "visitors": []}), 200, response_headers
-
-    if action == 'delete':
-        visitor_id = data.get('id')
-        visitors = load_visitors()
-        new_visitors = [v for v in visitors if v.get('id') != visitor_id]
-        if len(new_visitors) == len(visitors):
-            return jsonify({"success": False, "message": "Ziyaretçi kaydı bulunamadı."}), 404, response_headers
-        save_visitors(new_visitors)
-        return jsonify({"success": True}), 200, response_headers
-
-    visitors = load_visitors()
-    bans = _cleanup_bans(load_bans())
-    banned_ips = {b['value'] for b in bans.values() if b.get('kind') == 'ip'}
-    banned_devices = {b['value'] for b in bans.values() if b.get('kind') == 'device'}
-    banned_emails = {b['value'].lower() for b in bans.values() if b.get('kind') == 'email'}
-
-    out = []
-    for v in reversed(visitors):
-        v_ip = v.get("ip", "")
-        v_device = v.get("device", "")
-        v_email = v.get("email", "")
-        out.append({
-            "id": v.get("id", ""),
-            "ip": v_ip,
-            "device": v_device,
-            "email": v_email,
-            "time": v.get("time", ""),
-            "question": v.get("question", ""),
-            "is_banned": (v_ip in banned_ips) or (bool(v_device) and v_device in banned_devices) or (bool(v_email) and v_email.lower() in banned_emails),
-        })
-    return jsonify({"success": True, "visitors": out}), 200, response_headers
-
-
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -538,7 +348,7 @@ if AI_API_KEY:
         AI_API_PROVIDER = "gemini"
 
 
-def ask_ai_fallback(user_text, buddy_mode=False, history=None):
+def ask_ai_fallback(user_text, buddy_mode=False, history=None, user_name=None):
     """Kural tabanlı sistem cevap bulamadığında çağrılır."""
     if not AI_API_KEY:
         return None
@@ -567,6 +377,7 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None):
         "kod bloğunu gereksiz uzun anlatımlarla şişirme. Eğer bir hata ayıklaması (debug) "
         "isteniyorsa önce hatanın kök nedenini net şekilde belirt, sonra düzeltilmiş kodu ver. "
         + ("Samimi ve arkadaşça (kanka diliyle) konuş." if buddy_mode else "Kibar ve profesyonel bir dille konuş.")
+        + (f" Kullanıcının adı '{user_name}'; uygun ve doğal düştüğü yerlerde ismiyle hitap edebilirsin, ama her cümlede tekrar etme." if user_name else "")
     )
 
     try:
@@ -1597,6 +1408,64 @@ physics_geometry_database = {
     "küre": "<b>Geometri - Küre:</b> Uzayda sabit bir noktadan eşit uzaklıktaki noktaların oluşturduğu üç boyutlu geometrik şekildir. Hacmi $V = \\frac{4}{3} \\pi r^3$, yüzey alanı $A = 4\\pi r^2$ formülüyle bulunur.",
 }
 
+# ⚽ FUTBOL VERİ TABANI (EKLENTİ)
+football_database = {
+    "dunya kupasi": "<b>Futbol - FIFA Dünya Kupası:</b> Milli takımların katıldığı, dört yılda bir düzenlenen ve futbolun en prestijli turnuvası kabul edilen organizasyondur. İlki 1930'da Uruguay'da oynanmıştır.",
+    "sampiyonlar ligi": "<b>Futbol - UEFA Şampiyonlar Ligi:</b> Avrupa'daki kulüp takımlarının katıldığı, her sezon düzenlenen en prestijli Avrupa kulüp turnuvasıdır.",
+    "ofsayt": "<b>Futbol - Ofsayt Kuralı:</b> Bir oyuncunun, topun kendisine oynandığı anda rakip kalecinden ve son iki rakip oyuncudan daha ileride (kaleye daha yakın) pozisyonda olması durumudur ve genellikle faul sayılır.",
+    "penalti": "<b>Futbol - Penaltı:</b> Ceza sahası içinde yapılan bir ihlal sonucunda, topu kaleye 11 metre mesafeden, sadece kaleciye karşı şutlama hakkı veren serbest vuruştur.",
+    "var sistemi": "<b>Futbol - VAR (Video Yardımcı Hakem):</b> Hakemin kritik pozisyonlarda (gol, penaltı, kırmızı kart, kimlik hatası) kamera görüntülerinden yardım aldığı teknolojik karar destek sistemidir.",
+    "korner": "<b>Futbol - Korner (Köşe Vuruşu):</b> Topun, savunma takımının bir oyuncusundan en son değdikten sonra kendi taç çizgisinden çıkması durumunda kullanılan vuruştur.",
+    "hentbol futbol degil": "<b>Not:</b> Hentbol ayrı bir spor dalıdır, futbol sorularına devam edebiliriz. ⚽",
+    "galatasaray": "<b>Futbol - Galatasaray:</b> 1905'te kurulan, sarı-kırmızı renkleriyle bilinen, Türkiye'nin en köklü spor kulüplerinden biridir. 2000 yılında UEFA Kupası'nı kazanan tek Türk kulübüdür.",
+    "fenerbahce": "<b>Futbol - Fenerbahçe:</b> 1907'de kurulan, sarı-lacivert renkleriyle bilinen İstanbul merkezli köklü bir Türk spor kulübüdür.",
+    "besiktas": "<b>Futbol - Beşiktaş:</b> 1903'te kurulan, siyah-beyaz renkleriyle bilinen, Türkiye'nin ilk kurulan spor kulüplerinden biridir.",
+    "trabzonspor": "<b>Futbol - Trabzonspor:</b> 1967'de kurulan, bordo-mavi renkleriyle bilinen ve İstanbul dışından şampiyonluk kazanabilmiş nadir Türk kulüplerinden biridir.",
+    "messi": "<b>Futbol - Lionel Messi:</b> Arjantinli efsanevi futbolcu, çok sayıda Ballon d'Or (Altın Top) ödülü sahibidir ve 2022'de Arjantin'i Dünya Kupası şampiyonluğuna taşımıştır.",
+    "ronaldo": "<b>Futbol - Cristiano Ronaldo:</b> Portekizli efsanevi futbolcu, kariyerinde çok sayıda Şampiyonlar Ligi ve bireysel ödül kazanmış, futbol tarihinin en golcü isimlerinden biridir.",
+    "fifa": "<b>Futbol - FIFA:</b> Uluslararası Futbol Federasyonları Birliği'dir; dünya genelindeki futbol federasyonlarını çatısı altında toplayan ve Dünya Kupası'nı organize eden kuruluştur.",
+    "uefa": "<b>Futbol - UEFA:</b> Avrupa Futbol Federasyonları Birliği'dir; Avrupa'daki futbol federasyonlarını yöneten ve Şampiyonlar Ligi gibi turnuvaları organize eden kuruluştur.",
+    "hat trick": "<b>Futbol - Hat-trick:</b> Bir oyuncunun tek bir maçta en az üç gol atmasıdır.",
+    "sari kart": "<b>Futbol - Sarı Kart:</b> Bir oyuncuya kurallara aykırı ya da centilmenlik dışı davranış nedeniyle gösterilen ilk uyarı cezasıdır; aynı maçta ikinci sarı kart görmek kırmızı kart (oyundan atılma) anlamına gelir.",
+    "kirmizi kart": "<b>Futbol - Kırmızı Kart:</b> Ciddi bir kural ihlali sonucunda oyuncunun doğrudan oyundan çıkarılmasını sağlayan cezadır; takım o oyuncu olmadan devam eder.",
+}
+
+# 🚗 ARABA / OTOMOTİV VERİ TABANI (EKLENTİ)
+car_database = {
+    "elektrikli araba": "<b>Otomotiv - Elektrikli Araba:</b> İçten yanmalı motor yerine elektrik motoru ve şarj edilebilir batarya ile çalışan, egzoz emisyonu üretmeyen araçlardır.",
+    "hibrit araba": "<b>Otomotiv - Hibrit Araç:</b> Hem içten yanmalı motor hem de elektrik motorunu birlikte kullanarak yakıt verimliliğini artıran araç türüdür.",
+    "otomatik vites": "<b>Otomotiv - Otomatik Vites:</b> Sürücünün debriyaj pedalına basmasına gerek kalmadan, vites değişimini araç bilgisayarının kendisinin yaptığı şanzıman türüdür.",
+    "manuel vites": "<b>Otomotiv - Manuel (Düz) Vites:</b> Sürücünün debriyaj pedalı ve vites koluyla vites değişimini kendisinin yaptığı geleneksel şanzıman türüdür.",
+    "turbo motor": "<b>Otomotiv - Turbo (Turbocharger):</b> Egzoz gazlarının enerjisini kullanarak motora daha fazla hava basan, böylece aynı motor hacminden daha fazla güç almayı sağlayan bir sistemdir.",
+    "beygir gucu": "<b>Otomotiv - Beygir Gücü (HP):</b> Bir motorun ürettiği gücün ölçü birimidir; günümüzde genellikle 'hp' (horsepower) veya 'PS' (Pferdestärke) olarak ifade edilir.",
+    "tork": "<b>Otomotiv - Tork:</b> Motorun dönme/çekiş kuvvetidir; özellikle araç kalkışı ve yokuş tırmanma performansında belirleyici rol oynar, birimi Newton-metre (Nm)'dir.",
+    "suv nedir": "<b>Otomotiv - SUV:</b> 'Sport Utility Vehicle' kısaltmasıdır; yüksek yerden yükseklik, geniş iç hacim ve genellikle 4x4 çekişe sahip spor amaçlı arazi/şehir araçlarıdır.",
+    "sedan nedir": "<b>Otomotiv - Sedan:</b> Kapalı kasa, dört kapılı, ayrı bir bagaj bölümüne sahip klasik binek otomobil gövde tipidir.",
+    "tesla model s": "<b>Otomotiv - Tesla Model S:</b> Tesla firmasının 2012'de piyasaya sürdüğü, uzun menzilli tam elektrikli premium bir sedan otomobildir.",
+    "tesla model 3": "<b>Otomotiv - Tesla Model 3:</b> Tesla'nın daha uygun fiyatlı, kompakt tam elektrikli sedan modelidir ve dünya genelinde en çok satan elektrikli otomobillerden biridir.",
+    "toyota corolla": "<b>Otomotiv - Toyota Corolla:</b> Toyota'nın 1966'dan bu yana üretilen, dünyanın en çok satan otomobil modellerinden biri olan kompakt sedan/hatchback'idir.",
+    "ford mustang": "<b>Otomotiv - Ford Mustang:</b> Ford'un 1964'te piyasaya sürdüğü, 'pony car' segmentinin öncüsü sayılan efsanevi spor otomobilidir.",
+    "bmw 3 serisi": "<b>Otomotiv - BMW 3 Serisi:</b> BMW'nin 1975'ten bu yana ürettiği, sportif sürüş özellikleriyle bilinen kompakt lüks sedan modelidir.",
+    "mercedes c serisi": "<b>Otomotiv - Mercedes-Benz C-Serisi:</b> Mercedes-Benz'in kompakt lüks sedan/karavan segmentindeki, konfor ve teknolojiyle öne çıkan modelidir.",
+    "porsche 911": "<b>Otomotiv - Porsche 911:</b> 1963'ten bu yana üretilen, arkada motor yerleşimi ve kendine özgü tasarımıyla tanınan efsanevi bir spor otomobil modelidir.",
+    "abs nedir": "<b>Otomotiv - ABS (Kilitlenme Önleyici Fren Sistemi):</b> Ani frenlemelerde tekerleklerin kilitlenmesini önleyerek aracın kontrolünü ve direksiyon hakimiyetini koruyan güvenlik sistemidir.",
+    "airbag": "<b>Otomotiv - Hava Yastığı (Airbag):</b> Çarpışma anında saniyenin çok küçük bir bölümünde şişerek sürücü ve yolcuları sert temaslardan koruyan pasif güvenlik sistemidir.",
+}
+
+# 🐾 HAYVAN ANATOMİSİ VERİ TABANI (EKLENTİ)
+animal_database = {
+    "kopek anatomisi": "<b>Hayvan Anatomisi - Köpek:</b> Köpeklerin koku alma duyusu insanlardan 10.000-100.000 kat daha keskindir; bunun nedeni burunlarındaki koku alıcı hücrelerinin çok daha fazla olmasıdır.",
+    "kedi anatomisi": "<b>Hayvan Anatomisi - Kedi:</b> Kediler omurgalarının esnekliği sayesinde vücutlarını havada çevirerek genellikle ayakları üzerine düşebilir; ayrıca karanlıkta insanlardan çok daha iyi görebilirler.",
+    "kus anatomisi": "<b>Hayvan Anatomisi - Kuşlar:</b> Kuşların kemikleri içi boş (pnömatik) yapıdadır, bu da onları hem hafif hem de uçuş için yeterince güçlü kılar. Akciğerleri, memelilerden farklı olarak sürekli tek yönlü hava akışıyla çalışır.",
+    "balik anatomisi": "<b>Hayvan Anatomisi - Balıklar:</b> Balıklar solungaçları aracılığıyla sudaki çözünmüş oksijeni alır; yüzme keseleri (hava kesesi) sayesinde suda istedikleri derinlikte durabilirler.",
+    "at anatomisi": "<b>Hayvan Anatomisi - At:</b> Atlar tek tırnaklı (parmak ucunda yürüyen) hayvanlardır; gözleri kafalarının yanlarında olduğundan neredeyse 360 dereceye yakın bir görüş açısına sahiptirler.",
+    "yilan anatomisi": "<b>Hayvan Anatomisi - Yılan:</b> Yılanların gözkapağı yoktur; göz, saydam pullarla korunur. Çenelerindeki esnek bağlar sayesinde kendilerinden çok daha büyük avları yutabilirler.",
+    "ari anatomisi": "<b>Hayvan Anatomisi - Arı:</b> Arılar bileşik gözleri sayesinde ultraviyole ışığı da algılayabilir; bu da çiçeklerdeki polen desenlerini insanların göremediği şekilde görmelerini sağlar.",
+    "kelebek anatomisi": "<b>Hayvan Anatomisi - Kelebek:</b> Kelebekler tat alma reseptörlerini ayaklarında taşır; bir çiçeğe veya yiyeceğe konduklarında ayaklarıyla 'tadına bakarlar'.",
+    "yunus anatomisi": "<b>Hayvan Anatomisi - Yunus:</b> Yunuslar memeli olmalarına rağmen suda yaşar, akciğerleriyle solunum yapar ve ekolokasyon (yankı ile konumlandırma) yeteneğiyle karanlık suda bile avlanabilirler.",
+    "fil anatomisi": "<b>Hayvan Anatomisi - Fil:</b> Filin hortumunda 40.000'den fazla kas bulunur ve hem küçük bir fıstığı tutacak kadar hassas hem de ağaç dalı kıracak kadar güçlüdür.",
+}
+
 # 👋 SELAMLAŞMA KELİMELERİ (fuzzy eşleşme için)
 GREETING_WORDS = ["selam", "merhaba", "naber", "selamlar", "merhabalar", "hey", "hi", "hello", "selaminaleykum", "aleykumselam", "gunaydin", "iyi gunler", "iyi aksamlar"]
 
@@ -1610,10 +1479,10 @@ YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "on
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
-INSULT_WORDS = ["ahmak", "am", "amcık", "amık", "amk", "amq", "ananın", "aptal", "aq", "baba", "başak", "beyinsiz", "dalyarak", "dangalak", "daşşak", "domal", "gaval", "gavat", "geri zekalı", "gerzek", "godoş", "göt", "götelek", "götveren", "ibne", "mal", "oc", "oe", "orospu", "orospu çocuğu", "orospu evladı", "piç", "puşt", "salak", "sik", "sikiş", "sikm", "sikmek", "sikti", "siktir", "sokuş", "sürtük", "taşşak", "yarak", "yarrak"]
+INSULT_WORDS = ["mal", "aptal", "salak", "gerizekali", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek"]
 
 # 😤 "DALGA MI GEÇİYORSUN" TÜRÜ SİNİRLİ İFADELER (EKLENTİ)
-FRUSTRATION_PHRASES = ["dalga mı geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mı buluyorsun"]
+FRUSTRATION_PHRASES = ["dalga mi geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mi buluyorsun"]
 
 # 🗣️ "DO YOU SPEAK ENGLISH/RUSSIAN" TÜRÜ DİL SORULARI
 LANGUAGE_PHRASES = {
@@ -1624,6 +1493,32 @@ LANGUAGE_PHRASES = {
 
 # 🇹🇷 TEKRAR TÜRKÇEYE DÖNME KALIPLARI
 LANGUAGE_RESET_PHRASES = ["turkce konus", "turkceye don", "turkce devam et", "speak turkish", "turkish konus"]
+
+# 🤷 "CEVAP VERİLEMEDİ" DURUMU İÇİN ÇEŞİTLENDİRİLMİŞ İFADELER (EKLENTİ)
+# {name} yerine boşsa "" , doluysa " İsim" gelir (başında boşluk dahil).
+NO_ANSWER_REPLIES_FORMAL = [
+    "ARIES bu soruyu analiz etti ancak tam bir eşleşme bulamadı{name}. Matematik, fen bilimleri, fizik, geometri, anatomi, tarih, coğrafya, futbol veya otomotiv ile ilgili bir soru sormayı deneyebilirsiniz.",
+    "Bu konuda elimde net bir bilgi bulamadım{name}. Başka bir şekilde sorar mısınız, ya da konuyu biraz daha açar mısınız?",
+    "Hmm, bu soruyu tam olarak cevaplayamadım{name}. İsterseniz matematik, tarih, coğrafya, fizik, futbol, otomotiv gibi konulardan birini deneyebiliriz.",
+    "Maalesef bu soruya şu an net bir yanıt veremiyorum{name}. Farklı kelimelerle tekrar sorabilir misiniz?",
+]
+NO_ANSWER_REPLIES_BUDDY = [
+    "ARIES bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka{name}. Matematik, fen, fizik, geometri, anatomi, tarih, futbol ya da araba sormayı dene!",
+    "Valla bu soruda tam takılamadım kanka{name} 😅 Başka türlü sorsan bi' dene?",
+    "Bu konuda elimde bir şey yok kanka{name}, ama matematik, tarih, coğrafya, fizik derse hemen yardımcı olurum!",
+    "Tam oturtamadım bu soruyu kanka{name} 🤔 Biraz daha açar mısın?",
+]
+
+# ⚠️ YAPAY ZEKA HATA UYARISI (EKLENTİ): sadece serbest üretim (AI fallback)
+# yanıtlarının altına eklenir; sabit veri tabanı cevaplarına eklenmez.
+AI_DISCLAIMER_HTML = (
+    '<br><br><span style="font-size:0.78em;opacity:0.65;display:block;margin-top:4px;">'
+    '⚠️ Bu yanıt bir yapay zekâ tarafından oluşturulmuştur ve hatalı veya yanıltıcı olabilir. '
+    'Lütfen yanıtları iki kez kontrol edin. '
+    '<a href="https://support.anthropic.com/en/articles/8525154-claude-is-providing-incorrect-or-misleading-responses-what-s-going-on" '
+    'target="_blank" rel="noopener noreferrer">Daha fazla bilgi</a>.'
+    '</span>'
+)
 
 # 🔁 "X'i İngilizceye/Rusçaya çevir" / "translate X to english/russian" KALIPLARI
 TRANSLATE_TO_EN_TR = re.compile(r'^(.+?)\s*(?:kelimesini|ifadesini|cümlesini|cumlesini)?\s*ingilizceye\s*çevir\.?$', re.IGNORECASE)
@@ -1718,11 +1613,42 @@ def format_code_blocks(text):
     return text
 
 
-def build_reply(text):
+def _translate_and_jsonify(text):
     target = session.get('lang')
     if target in ('en', 'ru'):
         text = translate_html_preserving_tags(text, target)
     return jsonify({"reply": text})
+
+
+# build_reply, ask() içinde raw_message/user_key bilgisine erişebilmesi için
+# yerel bir sürümle gölgelenir (bkz. ask() fonksiyonu); modül seviyesindeki bu
+# sürüm, sohbet geçmişi kaydı yapılmasının gerekmediği yerlerde kullanılabilir.
+def build_reply(text):
+    return _translate_and_jsonify(text)
+
+
+def _normalize_tr_chars(text):
+    """ı/ğ/ü/ş/ö/ç karakterlerini ASCII karşılıklarına indirger (anahtar eşleştirme için)."""
+    return (text.replace("ı", "i").replace("ğ", "g").replace("ü", "u")
+                .replace("ş", "s").replace("ö", "o").replace("ç", "c"))
+
+
+_KEY_PATTERN_CACHE = {}
+
+
+def key_matches(key, normalized_text):
+    """Bir sözlük anahtarının, normalize edilmiş mesaj içinde KELİME SINIRLARIYLA
+    geçip geçmediğini kontrol eder. Bu sayede:
+      1) Anahtarın içindeki ı/ğ/ü/ş/ö/ç harfleri normalize edilmiş mesajla uyumlu hale gelir
+         (örn. "küre" anahtarı "kure" olarak da eşleşebilir),
+      2) "is" gibi kısa anahtarların "istanbul" gibi kelimelerin İÇİNDE yanlışlıkla
+         eşleşmesi önlenir (kelime sınırı \\b kullanılır)."""
+    pattern = _KEY_PATTERN_CACHE.get(key)
+    if pattern is None:
+        normalized_key = _normalize_tr_chars(key).replace("_", " ")
+        pattern = re.compile(r'\b' + re.escape(normalized_key) + r'\b')
+        _KEY_PATTERN_CACHE[key] = pattern
+    return pattern.search(normalized_text) is not None
 
 
 def calculate_haversine(lat1, lon1, lat2, lon2):
@@ -1839,11 +1765,11 @@ def get_logs():
     if request.method == 'OPTIONS':
         return jsonify({"success": True}), 200, response_headers
 
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     password = data.get('password', '')
     action = data.get('action', 'get')
 
-    if password != "4275":
+    if not _secure_compare(password, ADMIN_PANEL_PASSWORD):
         return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
 
     if action == 'clear':
@@ -1883,8 +1809,8 @@ def agent_poll():
     if not AGENT_SECRET:
         return jsonify({"success": False, "error": "Ajan devre dışı (AGENT_SECRET ayarlanmamış)."}), 403
 
-    data = request.json or {}
-    if data.get("secret") != AGENT_SECRET:
+    data = request.get_json(silent=True) or {}
+    if not _secure_compare(data.get("secret"), AGENT_SECRET):
         return jsonify({"success": False, "error": "Yetkisiz erişim."}), 403
 
     global pending_agent_commands
@@ -1903,44 +1829,51 @@ def ask():
     if request.method == 'OPTIONS':
         return jsonify({"success": True}), 200, cors_headers
 
-    is_admin_test = request.json.get("admin_password") == "4275"
+    # ⚠️ GÜVENLİK DÜZELTMESİ: request.json doğrudan erişilirse Content-Type
+    # uygun değilse (veya boş gövdeyse) 400 ile sunucu hatası fırlatabiliyordu.
+    # get_json(silent=True) ile güvenli hale getirildi.
+    payload = request.get_json(silent=True) or {}
+    is_admin_test = _secure_compare(payload.get("admin_password"), ADMIN_PANEL_PASSWORD)
 
     if MAINTENANCE_MODE and not is_admin_test:
         return jsonify({"reply": MAINTENANCE_MESSAGE, "maintenance": True}), 200, cors_headers
 
-    if GOOGLE_LOGIN_ENABLED and not is_admin_test and not session.get('google_user') and not session.get('local_user'):
+    if GOOGLE_LOGIN_ENABLED and not is_admin_test and not session.get('google_user'):
         current_count = session.get('guest_message_count', 0)
         if current_count >= GUEST_MESSAGE_LIMIT:
             return jsonify({
                 "reply": f"💬 Misafir kullanıcılar için {GUEST_MESSAGE_LIMIT} mesajlık ücretsiz sınıra ulaştın. "
-                         f"Devam etmek için lütfen giriş yap.",
+                         f"Devam etmek için lütfen Google ile giriş yap.",
                 "limit_reached": True
             }), 200, cors_headers
         session['guest_message_count'] = current_count + 1
 
-    user_message = request.json.get("message", "").lower().strip()
-    raw_message = request.json.get("message", "").strip()
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    user_ip = get_client_ip()
+    user_message = payload.get("message", "").lower().strip()
+    raw_message = payload.get("message", "").strip()
 
-    user_email = (session.get('google_user') or session.get('local_user') or {}).get('email', '')
+    # 📏 Mesaj uzunluk koruması (aşırı uzun girdilerle gereksiz işlem yükünü önler)
+    MAX_MESSAGE_LENGTH = 1500
+    if len(raw_message) > MAX_MESSAGE_LENGTH:
+        return jsonify({"reply": f"Mesajın biraz fazla uzun görünüyor (max {MAX_MESSAGE_LENGTH} karakter). Kısaltıp tekrar dener misin?"}), 200, cors_headers
+
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    user_ip = request.remote_addr
+    user_key = get_user_key()
 
     def save_log(status_msg):
         with open("sorular.txt", "a", encoding="utf-8") as file:
-            email_part = f" | E-POSTA: {user_email}" if user_email else ""
-            file.write(f"[{current_time}] IP: {user_ip}{email_part} | DURUM: {status_msg} -> Soru: {raw_message}\n")
+            file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
 
-    device_id = (request.json.get("device_id") or "").strip()
-    record_visitor(user_ip, device_id, raw_message, email=user_email)
-
-    active_ban = get_active_ban(ip=user_ip, device=device_id or None, email=user_email or None)
-    if active_ban and not is_admin_test:
-        save_log(f"ENGELLENDI (BANLI-{active_ban.get('kind', '').upper()})")
-        ban_reason = active_ban.get("reason") or ""
-        reply_text = "🚫 Erişimin kısıtlandı, bu hesap/IP/cihaz kara listeye alınmış."
-        if ban_reason:
-            reply_text += f" Sebep: {ban_reason}"
-        return jsonify({"reply": reply_text, "banned": True}), 200, cors_headers
+    # 🗂️ ESKİ SOHBETLERİ GÖRÜNTÜLEME (EKLENTİ): build_reply'nin bu istek özelinde
+    # her yanıtı otomatik olarak kullanıcının kalıcı geçmişine kaydeden yerel
+    # sürümüyle gölgelenmesi. Bu satırdan sonraki tüm build_reply(...) çağrıları
+    # bu sürümü kullanır.
+    def build_reply(text):
+        try:
+            append_chat_history(user_key, raw_message, text)
+        except Exception:
+            pass
+        return _translate_and_jsonify(text)
 
     user_message = re.sub(r'[.,\?!;\(\)"\'’\-]', '', user_message)
     norm_msg = user_message.replace("ı", "i").replace("ğ", "g").replace("ü", "u").replace("ş", "s").replace("ö", "o").replace("ç", "c")
@@ -1971,6 +1904,34 @@ def ask():
     norm_msg_nospace = norm_msg.replace(" ", "")
 
     is_buddy_mode = "kanka" in norm_msg
+
+    # 🙋 İSİMLE HİTAP (EKLENTİ): "adım Ahmet", "ismim Ahmet", "bana Ahmet de" gibi
+    # kalıpları yakalayıp session'a kaydeder; ARIES sonraki cevaplarında kullanıcıya
+    # ismiyle hitap edebilir. "adımı unut" ile sıfırlanabilir.
+    NAME_FORGET_PATTERNS = ["adimi unut", "ismimi unut", "adimi sil"]
+    NAME_SET_PATTERNS = [
+        re.compile(r'^(?:benim\s+)?ad[ıi]m\s+(.+)$', re.IGNORECASE),
+        re.compile(r'^ismim\s+(.+)$', re.IGNORECASE),
+        re.compile(r'^bana\s+(.+?)\s+de(?:yebilirsin)?\.?$', re.IGNORECASE),
+    ]
+    if any(p in norm_msg_nospace for p in NAME_FORGET_PATTERNS):
+        session.pop('user_name', None)
+        save_log("CEVAPLANDI")
+        return build_reply("Tamam, adını unuttum. İstersen 'adım ...' diyerek tekrar söyleyebilirsin. 🙂")
+
+    for _name_pattern in NAME_SET_PATTERNS:
+        _name_match = _name_pattern.match(raw_message.strip())
+        if _name_match:
+            candidate_name = _name_match.group(1).strip(" .!?")[:30]
+            if candidate_name and re.fullmatch(r"[A-Za-zÇĞİÖŞÜçğıöşü' -]+", candidate_name):
+                session['user_name'] = candidate_name.title()
+                save_log("CEVAPLANDI")
+                if is_buddy_mode:
+                    return build_reply(f"Tamam {session['user_name']} kanka, seni böyle hitap edeceğim! 😎")
+                return build_reply(f"Memnun oldum, {session['user_name']}! Bundan sonra sana böyle hitap edeceğim. 😊")
+            break
+
+    user_name = session.get('user_name')
 
     agent_reply = try_queue_app_close_command(norm_msg, raw_message)
     if agent_reply:
@@ -2027,9 +1988,12 @@ def ask():
     if any(fuzzy_word_in(w, GREETING_WORDS) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
-            return build_reply("Naber kanka! ARIES AI hazır, ne soruyoruz? 😎")
+            name_part = f" {user_name}" if user_name else ""
+            return build_reply(f"Naber{name_part} kanka! ARIES AI hazır, ne soruyoruz? 😎")
+        if user_name:
+            return build_reply(f"Merhaba {user_name}! Ben ARIES AI. Size nasıl yardımcı olabilirim?")
         return build_reply("Merhaba, ben ARIES AI. Size nasıl yardımcı olabilirim?")
-    
+
     if any(fuzzy_word_in(w, THANKS_WORDS, cutoff=0.75) for w in fixed_words):
         save_log("CEVAPLANDI")
         if is_buddy_mode:
@@ -2091,30 +2055,50 @@ def ask():
                 return build_reply("İşlem hesaplanamadı kanka, sayılar çok büyük olabilir ya da ifade geçersiz. Kontrol et.")
             return build_reply("İşlem hesaplanamadı. Sayılar çok büyük olabilir ya da ifade geçersiz görünüyor, lütfen kontrol edin.")
 
+    # ⚠️ DÜZELTME: eşleştirmeler artık key_matches() kullanıyor — hem "küre", "miraç",
+    # "doğu timor" gibi anahtarlardaki ı/ğ/ü/ş/ö/ç harfleri normalize edilmiş mesajla
+    # doğru eşleşiyor (eskiden bu anahtarlar ASLA eşleşemiyordu), hem de "is" gibi kısa
+    # anahtarlar artık "istanbul" gibi kelimelerin İÇİNDE yanlışlıkla tetiklenmiyor
+    # (kelime sınırı ile eşleştirme yapılıyor).
     for key, response in science_database.items():
-        if key in norm_msg:
+        if key_matches(key, norm_msg):
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sayisal" style="background-color:#00e676; color:black;">Fen Bilimleri & Anatomi</span><br>{response}')
 
+    for key, response in animal_database.items():
+        if key_matches(key, norm_msg):
+            save_log("CEVAPLANDI")
+            return build_reply(f'<span class="expert-badge badge-sayisal" style="background-color:#26c6da; color:black;">Hayvan Anatomisi</span><br>{response}')
+
     for key, response in physics_geometry_database.items():
-        if key in norm_msg:
+        if key_matches(key, norm_msg):
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sayisal" style="background-color:#ff9100; color:black;">Fizik & Geometri</span><br>{response}')
 
     for key, response in religious_database.items():
-        if key in norm_msg:
+        if key_matches(key, norm_msg):
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#9c27b0;">İslami Tarih</span><br>{response}')
 
     for key, response in historical_events.items():
-        if key.replace("ı", "i").replace("ğ", "g") in norm_msg:
+        if key_matches(key, norm_msg):
             save_log("CEVAPLANDI")
             return build_reply(f'<span class="expert-badge badge-sozel">Tarih Bilgisi</span><br>{response}')
 
+    for key, response in football_database.items():
+        if key_matches(key, norm_msg):
+            save_log("CEVAPLANDI")
+            return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#43a047;">Futbol</span><br>{response}')
+
+    for key, response in car_database.items():
+        if key_matches(key, norm_msg):
+            save_log("CEVAPLANDI")
+            return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#546e7a;">Otomotiv</span><br>{response}')
+
     matched_countries = []
     for country, data in world_countries.items():
-        if country in norm_msg:
-            matched_countries.append({"name": country.upper(), "b": data["b"], "k": data["k"], "lat": data["lat"], "lon": data["lon"], "bilgi": data["bilgi"]})
+        if key_matches(country, norm_msg):
+            matched_countries.append({"name": country.replace("_", " ").upper(), "b": data["b"], "k": data["k"], "lat": data["lat"], "lon": data["lon"], "bilgi": data["bilgi"]})
 
     if len(matched_countries) >= 2:
         distance = calculate_haversine(matched_countries[0]["lat"], matched_countries[0]["lon"], matched_countries[1]["lat"], matched_countries[1]["lon"])
@@ -2125,20 +2109,32 @@ def ask():
         return build_reply(f'<span class="expert-badge badge-cografya">Coğrafya</span><br><b>Ülke:</b> {matched_countries[0]["name"]}<br><b>Başkent:</b> {matched_countries[0]["b"]}')
 
     conversation_history = session.get('chat_history', [])
-    ai_reply = ask_ai_fallback(raw_message, buddy_mode=is_buddy_mode, history=conversation_history)
+    ai_reply = ask_ai_fallback(raw_message, buddy_mode=is_buddy_mode, history=conversation_history, user_name=user_name)
     if ai_reply:
         save_log("CEVAPLANDI (AI)")
         conversation_history.append({"role": "user", "content": raw_message})
         conversation_history.append({"role": "assistant", "content": ai_reply})
         session['chat_history'] = conversation_history[-10:]
         ai_reply_formatted = format_code_blocks(ai_reply)
-        return build_reply(f'<span class="expert-badge badge-sozel" style="background-color:#8e44ad;">Genişletilmiş Zeka</span><br>{ai_reply_formatted}')
+        # ⚠️ YAPAY ZEKA HATA UYARISI (EKLENTİ): serbest üretim (Genişletilmiş Zeka)
+        # yanıtlarının altına, kural tabanlı/sabit veri tabanı cevaplarında GÖSTERİLMEYEN
+        # bir uyarı ekleniyor — çünkü hata riski asıl bu serbest üretim kısmında var.
+        return build_reply(
+            f'<span class="expert-badge badge-sozel" style="background-color:#8e44ad;">Genişletilmiş Zeka</span><br>'
+            f'{ai_reply_formatted}{AI_DISCLAIMER_HTML}'
+        )
 
     save_log("CEVAPLANAMADI")
+    name_suffix = f" {user_name}" if user_name else ""
     if is_buddy_mode:
-        return build_reply("ARIES bu soruyu analiz etti ama tam bir eşleşme bulamadı kanka. Matematik, fen, fizik, geometri, anatomi, tarih veya coğrafya sormayı dene!")
-    return build_reply("ARIES bu soruyu analiz etti ancak tam bir eşleşme bulamadı. Matematik, fen bilimleri, fizik, geometri, anatomi, tarih veya coğrafya ile ilgili bir soru sormayı deneyebilirsiniz.")
+        return build_reply(random.choice(NO_ANSWER_REPLIES_BUDDY).format(name=name_suffix))
+    return build_reply(random.choice(NO_ANSWER_REPLIES_FORMAL).format(name=name_suffix))
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # ⚠️ GÜVENLİK DÜZELTMESİ: debug modu artık varsayılan olarak KAPALI.
+    # Werkzeug'un debug modu, production'da uzaktan kod çalıştırmaya (RCE) izin
+    # verebilecek bir hata konsolu açar. Lokal geliştirme için FLASK_DEBUG=1 ortam
+    # değişkenini ayarlayarak açabilirsiniz.
+    debug_enabled = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug_enabled)
