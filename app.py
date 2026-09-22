@@ -1479,7 +1479,19 @@ YOURE_WELCOME_WORDS = ["ricaederim", "ricaederiz", "birseydegil", "nedemek", "on
 CREATOR_PHRASES = ["kim yapti", "yapimcin", "kim gelistirdi", "kurucun", "sahibin", "sen kimsin", "adini kim verdi"]
 
 # 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ)
-INSULT_WORDS = ["mal", "aptal", "salak", "gerizekali", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek"]
+# 😤 ARGO / HAKARET KELİMELERİ (EKLENTİ) — kullanıcı listesiyle birleştirildi/genişletildi.
+# Amaç: botun bunları ÜRETMESİ değil, kullanıcı hakaret ettiğinde algılayıp
+# sakinleştirici bir cevap vermesi (bkz. ask() içindeki INSULT_WORDS/INSULT_PHRASES kontrolü).
+INSULT_WORDS = [
+    "mal", "aptal", "salak", "gerizekali", "ahmak", "beyinsiz", "dangalak", "aq", "gerzek",
+    "am", "amcik", "amik", "amk", "amq", "ananin", "baba", "basak", "dalyarak", "dassak",
+    "domal", "gaval", "gavat", "godos", "got", "gotelek", "gotveren", "ibne", "oc", "oe",
+    "orospu", "pic", "pust", "sik", "sikis", "sikm", "sikmek", "sikti", "siktir", "sokus",
+    "surtuk", "tassak", "yarak", "yarrak",
+]
+# İki veya daha çok kelimeden oluşan hakaret kalıpları (tek kelime bazlı fuzzy eşleşmeye
+# girmez, bu yüzden ayrı bir liste olarak norm_msg içinde alt-dize taranır).
+INSULT_PHRASES = ["geri zekali", "orospu cocugu", "orospu evladi"]
 
 # 😤 "DALGA MI GEÇİYORSUN" TÜRÜ SİNİRLİ İFADELER (EKLENTİ)
 FRUSTRATION_PHRASES = ["dalga mi geciyon", "dalga geciyorsun", "dalga geciyon musun", "kafa mi buluyorsun"]
@@ -2004,7 +2016,7 @@ def ask():
         save_log("CEVAPLANDI")
         return build_reply("Ne demek, her zaman yardımcı olmaktan memnuniyet duyarım. 😊")
 
-    if any(fuzzy_word_in(w, INSULT_WORDS, cutoff=0.85) for w in fixed_words):
+    if any(fuzzy_word_in(w, INSULT_WORDS, cutoff=0.85) for w in fixed_words) or any(p in norm_msg for p in INSULT_PHRASES):
         save_log("CEVAPLANDI (SAKINLESTIRME)")
         if is_buddy_mode:
             return build_reply("Sakin ol kanka 😅 Küfür etmene gerek yok, ne sormak istiyorsan yardımcı olurum.")
