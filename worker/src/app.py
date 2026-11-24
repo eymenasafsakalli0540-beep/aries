@@ -33,6 +33,28 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 @app.before_request
 def _make_session_permanent():
     session.permanent = True
+    # Cloudflare secret'leri os.environ yerine binding olarak gelir; mevcut
+    # os.environ.okuyan kodun çalışması için onları her istekte eşitliyoruz.
+    global AI_API_KEY, AI_API_PROVIDER, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+    global AGENT_SECRET, ADMIN_PANEL_PASSWORD
+    bindings = request.environ.get("workers.env") or {}
+    for key in (
+        "SECRET_KEY", "AI_API_KEY", "AI_API_PROVIDER", "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET", "AGENT_SECRET", "ADMIN_PANEL_PASSWORD",
+    ):
+        try:
+            value = getattr(bindings, key, None)
+        except Exception:
+            value = None
+        if isinstance(value, str):
+            os.environ[key] = value
+    AI_API_KEY = os.environ.get("AI_API_KEY", AI_API_KEY).strip()
+    AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", AI_API_PROVIDER).strip().lower()
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", GOOGLE_CLIENT_ID)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", GOOGLE_CLIENT_SECRET)
+    AGENT_SECRET = os.environ.get("AGENT_SECRET", AGENT_SECRET)
+    ADMIN_PANEL_PASSWORD = os.environ.get("ADMIN_PANEL_PASSWORD", ADMIN_PANEL_PASSWORD)
+    app.secret_key = os.environ.get("SECRET_KEY", app.secret_key)
 
 # --------------------------------------------------------------------------
 # 🗂️ ESKİ SOHBETLERİ GÖRÜNTÜLEME (EKLENTİ)
