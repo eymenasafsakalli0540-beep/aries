@@ -1,0 +1,16 @@
+{
+  "name": "aries-eymen",
+  "main": "src/worker.py",
+  "compatibility_date": "2026-11-24",
+  "compatibility_flags": ["python_workers"],
+  "kv_namespaces": [
+    { "binding": "KV", "id": "bef53a506afb4f719d72dfe6ae1d61dc" }
+  ],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "workers_dev": true,
+  "preview_urls": true
+}
