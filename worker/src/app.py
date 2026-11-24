@@ -270,16 +270,22 @@ MAINTENANCE_FILE = "maintenance.flag"
 
 
 def _load_maintenance_state():
-    return os.path.exists(MAINTENANCE_FILE)
+    try:
+        raw = run_sync(request.environ["workers.env"].KV.get("aries:maintenance"))
+        return str(raw) == "1"
+    except Exception:
+        return False
 
 
 def _save_maintenance_state(is_on):
-    if is_on:
-        with open(MAINTENANCE_FILE, "w", encoding="utf-8") as f:
-            f.write("1")
-    else:
-        if os.path.exists(MAINTENANCE_FILE):
-            os.remove(MAINTENANCE_FILE)
+    try:
+        kv = request.environ["workers.env"].KV
+        if is_on:
+            run_sync(kv.put("aries:maintenance", "1"))
+        else:
+            run_sync(kv.delete("aries:maintenance"))
+    except Exception:
+        pass
 
 
 RENDER_API_KEY = os.environ.get("RENDER_API_KEY", "")
