@@ -357,7 +357,7 @@ AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()
 AI_API_PROVIDER = os.environ.get("AI_API_PROVIDER", "gemini").strip().lower()
 AI_MODEL_OPENAI = "gpt-4o-mini"
 AI_MODEL_ANTHROPIC = "claude-3-5-haiku-20241022"
-AI_MODEL_GEMINI = "gemini-2.5-flash"
+AI_MODEL_GEMINI = "gemini-3.5-flash-lite"
 
 if AI_API_KEY:
     if AI_API_KEY.startswith("sk-ant-"):
