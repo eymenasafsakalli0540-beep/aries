@@ -1992,8 +1992,6 @@ def ask():
         except Exception:
             pass
 
-    if not is_admin_test:
-        notify_email("ARIES yeni soru", f"{current_time}\nIP: {user_ip}\nSoru: {raw_message}")
 
     # 🗂️ ESKİ SOHBETLERİ GÖRÜNTÜLEME (EKLENTİ): build_reply'nin bu istek özelinde
     # her yanıtı otomatik olarak kullanıcının kalıcı geçmişine kaydeden yerel
