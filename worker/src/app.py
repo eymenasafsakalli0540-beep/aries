@@ -83,6 +83,35 @@ def _kv():
     return request.environ["workers.env"].KV
 
 
+def _binding(name):
+    try:
+        return getattr(request.environ.get("workers.env"), name, None)
+    except Exception:
+        return None
+
+
+def notify_email(subject, body):
+    """Yeni soru bildirimini Selam'da kullanılan Apps Script üzerinden gönderir."""
+    url = _binding("APPSCRIPT_URL")
+    secret = _binding("APPSCRIPT_SECRET")
+    if not url or not secret:
+        return
+    try:
+        requests.post(
+            url,
+            json={
+                "secret": secret,
+                "to": "eymenasafsakalli0540@gmail.com",
+                "name": "Aries",
+                "subject": subject,
+                "body": body,
+            },
+            timeout=10,
+        )
+    except Exception:
+        pass
+
+
 def _chat_history_key(user_key):
     safe_key = re.sub(r'[^a-zA-Z0-9_.-]', '_', user_key)
     return f"aries:chat:{safe_key}"
@@ -310,37 +339,12 @@ def _save_maintenance_state(is_on):
         pass
 
 
-RENDER_API_KEY = os.environ.get("RENDER_API_KEY", "")
-RENDER_SERVICE_ID = os.environ.get("RENDER_SERVICE_ID", "srv-d8pfgaj7uimc73a5i2eg")
-ARIES_MAINTENANCE_ENV_KEY = "ARIES_MAINTENANCE"
+def _set_worker_env_maintenance(is_on):
+    # Bakım durumu doğrudan Cloudflare KV'de tutuluyor; dış API çağrısı yok.
+    return _load_maintenance_state() == bool(is_on)
 
 
-def _set_render_env_maintenance(is_on):
-    if not RENDER_API_KEY:
-        return False
-    try:
-        url = f"https://api.render.com/v1/services/{RENDER_SERVICE_ID}/env-vars/{ARIES_MAINTENANCE_ENV_KEY}"
-        resp = requests.put(
-            url,
-            headers={
-                "Authorization": f"Bearer {RENDER_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={"value": "1" if is_on else "0"},
-            timeout=10,
-        )
-        return resp.status_code < 300
-    except Exception:
-        return False
-
-
-_env_maintenance = os.environ.get(ARIES_MAINTENANCE_ENV_KEY, "")
-if _env_maintenance in ("1", "true", "True"):
-    MAINTENANCE_MODE = True
-elif _env_maintenance in ("0", "false", "False"):
-    MAINTENANCE_MODE = False
-else:
-    MAINTENANCE_MODE = _load_maintenance_state()
+MAINTENANCE_MODE = False
 
 
 @app.after_request
@@ -470,8 +474,10 @@ def ask_ai_fallback(user_text, buddy_mode=False, history=None, user_name=None):
             error_detail = str(e)
             if hasattr(e, "response") and e.response is not None:
                 error_detail += f" | HTTP {e.response.status_code}: {e.response.text[:500]}"
-            with open("ai_errors.log", "a", encoding="utf-8") as f:
-                f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sağlayıcı: {AI_API_PROVIDER} | Hata: {error_detail}\n")
+            line = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Sağlayıcı: {AI_API_PROVIDER} | Hata: {error_detail}\n"
+            kv = _kv()
+            existing = str(run_sync(kv.get("aries:ai_errors")) or "")
+            run_sync(kv.put("aries:ai_errors", (existing + line)[-10000:]))
         except Exception:
             pass
         return None
@@ -1805,32 +1811,31 @@ def get_logs():
         return jsonify({"success": False, "message": "Hatalı şifre!"}), 403, response_headers
 
     if action == 'clear':
-        if os.path.exists("sorular.txt"):
-            os.remove("sorular.txt")
+        try:
+            run_sync(_kv().delete("aries:logs"))
+        except Exception:
+            pass
         return jsonify({"success": True, "logs": []}), 200, response_headers
 
     if action == 'maintenance':
         MAINTENANCE_MODE = True
         _save_maintenance_state(True)
-        render_synced = _set_render_env_maintenance(True)
-        return jsonify({"success": True, "maintenance": True, "render_synced": render_synced}), 200, response_headers
+        kv_synced = _set_worker_env_maintenance(True)
+        return jsonify({"success": True, "maintenance": True, "kv_synced": kv_synced}), 200, response_headers
 
     if action == 'resume':
         MAINTENANCE_MODE = False
         _save_maintenance_state(False)
-        render_synced = _set_render_env_maintenance(False)
-        return jsonify({"success": True, "maintenance": False, "render_synced": render_synced}), 200, response_headers
+        kv_synced = _set_worker_env_maintenance(False)
+        return jsonify({"success": True, "maintenance": False, "kv_synced": kv_synced}), 200, response_headers
 
     if action == 'status':
         return jsonify({"success": True, "maintenance": MAINTENANCE_MODE}), 200, response_headers
 
-    if os.path.exists("sorular.txt"):
-        with open("sorular.txt", "r", encoding="utf-8") as file:
-            logs = file.readlines()
-        clean_logs = [line.strip() for line in logs if line.strip()]
-        clean_logs = [add_turkish_translation_to_log_line(line) for line in clean_logs]
-        return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else ["Henüz hiç soru sorulmadı."]}), 200, response_headers
-    return jsonify({"success": True, "logs": ["Henüz hiç soru sorulmadı."]}), 200, response_headers
+    logs_raw = str(run_sync(_kv().get("aries:logs")) or "")
+    clean_logs = [line.strip() for line in logs_raw.splitlines() if line.strip()]
+    clean_logs = [add_turkish_translation_to_log_line(line) for line in clean_logs]
+    return jsonify({"success": True, "logs": list(reversed(clean_logs)) if clean_logs else ["Henüz hiç soru sorulmadı."]}), 200, response_headers
 
 
 @app.route('/api/agent-poll', methods=['POST', 'OPTIONS'])
@@ -1893,8 +1898,16 @@ def ask():
     user_key = get_user_key()
 
     def save_log(status_msg):
-        with open("sorular.txt", "a", encoding="utf-8") as file:
-            file.write(f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n")
+        try:
+            line = f"[{current_time}] IP: {user_ip} | DURUM: {status_msg} -> Soru: {raw_message}\n"
+            kv = _kv()
+            existing = str(run_sync(kv.get("aries:logs")) or "")
+            run_sync(kv.put("aries:logs", (existing + line)[-20000:]))
+        except Exception:
+            pass
+
+    if not is_admin_test:
+        notify_email("ARIES yeni soru", f"{current_time}\nIP: {user_ip}\nSoru: {raw_message}")
 
     # 🗂️ ESKİ SOHBETLERİ GÖRÜNTÜLEME (EKLENTİ): build_reply'nin bu istek özelinde
     # her yanıtı otomatik olarak kullanıcının kalıcı geçmişine kaydeden yerel
