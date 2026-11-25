@@ -11,6 +11,7 @@ import json
 import uuid
 import random
 import hmac
+import hashlib
 from difflib import get_close_matches
 from datetime import datetime, timedelta
 from pyodide.ffi import run_sync
@@ -70,7 +71,7 @@ CHAT_HISTORY_MAX_ITEMS = 200
 
 def get_user_key():
     """Kullanıcıyı benzersiz şekilde tanımlayan, dosya adı olarak güvenli bir anahtar üretir."""
-    google_user = session.get('google_user')
+    google_user = session.get('google_user') or session.get('local_user')
     if google_user and google_user.get('email'):
         safe_email = re.sub(r'[^a-zA-Z0-9_.-]', '_', google_user['email'])
         return f"g_{safe_email}"
@@ -239,6 +240,13 @@ def login_google_callback():
         "picture": user_info.get("picture", ""),
     }
     session['guest_message_count'] = 0
+    notify_email(
+        "🔑 Aries AI — Google ile Giriş",
+        f"E-posta: {session['google_user'].get('email', '')}\n"
+        f"Ad: {session['google_user'].get('name', '')}\n"
+        f"IP: {request.remote_addr}\n"
+        f"Zaman: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    )
     return redirect(request.url_root.rstrip('/') + '/')
 
 
@@ -250,7 +258,7 @@ def logout_google():
 
 @app.route('/api/auth-status')
 def auth_status():
-    user = session.get('google_user')
+    user = session.get('google_user') or session.get('local_user')
     return jsonify({
         "logged_in": bool(user),
         "user": user,
@@ -258,6 +266,84 @@ def auth_status():
         "guest_message_count": session.get('guest_message_count', 0),
         "guest_message_limit": GUEST_MESSAGE_LIMIT,
     })
+
+
+def _password_hash(salt, password):
+    return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+
+
+@app.route('/api/register', methods=['POST', 'OPTIONS'])
+def register_local():
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200
+    data = request.get_json(silent=True) or {}
+    email = str(data.get('email', '')).strip().lower()
+    password = str(data.get('password', ''))
+    name = str(data.get('name', '')).strip()
+    if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        return jsonify({"success": False, "message": "Geçerli bir e-posta yaz."}), 400
+    if len(password) < 6:
+        return jsonify({"success": False, "message": "Şifre en az 6 karakter olmalı."}), 400
+    if not name:
+        return jsonify({"success": False, "message": "Adını yaz."}), 400
+    try:
+        key = f"aries:user:{email}"
+        if run_sync(_kv().get(key)):
+            return jsonify({"success": False, "message": "Bu e-posta zaten kayıtlı."}), 409
+        salt = uuid.uuid4().hex
+        run_sync(_kv().put(key, json.dumps({
+            "email": email,
+            "name": name,
+            "salt": salt,
+            "hash": _password_hash(salt, password),
+            "created": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }, ensure_ascii=False)))
+    except Exception as exc:
+        return jsonify({"success": False, "message": "Kayıt kaydedilemedi: " + str(exc)}), 500
+    session['local_user'] = {"email": email, "name": name}
+    session['guest_message_count'] = 0
+    notify_email(
+        "🆕 Aries AI — Yeni Hesap Açıldı",
+        f"E-posta: {email}\nAd: {name}\nIP: {request.remote_addr}\n"
+        f"Zaman: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    )
+    return jsonify({"success": True}), 200
+
+
+@app.route('/api/login', methods=['POST', 'OPTIONS'])
+def login_local():
+    if request.method == 'OPTIONS':
+        return jsonify({"success": True}), 200
+    data = request.get_json(silent=True) or {}
+    email = str(data.get('email', '')).strip().lower()
+    password = str(data.get('password', ''))
+    try:
+        raw = run_sync(_kv().get(f"aries:user:{email}"))
+    except Exception as exc:
+        return jsonify({"success": False, "message": "Giriş kontrolü başarısız: " + str(exc)}), 500
+    if not raw:
+        return jsonify({"success": False, "message": "E-posta veya şifre hatalı."}), 401
+    try:
+        user = json.loads(str(raw))
+        ok = hmac.compare_digest(str(user.get('hash', '')), _password_hash(str(user.get('salt', '')), password))
+    except Exception:
+        ok = False
+    if not ok:
+        return jsonify({"success": False, "message": "E-posta veya şifre hatalı."}), 401
+    session['local_user'] = {"email": email, "name": user.get('name', '')}
+    session['guest_message_count'] = 0
+    notify_email(
+        "🔑 Aries AI — Hesaba Giriş Yapıldı",
+        f"E-posta: {email}\nAd: {user.get('name', '')}\nIP: {request.remote_addr}\n"
+        f"Zaman: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+    )
+    return jsonify({"success": True}), 200
+
+
+@app.route('/api/logout-local', methods=['POST', 'OPTIONS'])
+def logout_local():
+    session.pop('local_user', None)
+    return jsonify({"success": True}), 200
 
 # --------------------------------------------------------------------------
 # 🖥️ BİLGİSAYAR AJANI ALTYAPISI (EKLENTİ) — SINIRLI VE KONTROLLÜ
@@ -1553,7 +1639,7 @@ AI_DISCLAIMER_HTML = (
     '<br><br><span style="font-size:0.78em;opacity:0.65;display:block;margin-top:4px;">'
     '⚠️ Bu yanıt bir yapay zekâ tarafından oluşturulmuştur ve hatalı veya yanıltıcı olabilir. '
     'Lütfen yanıtları iki kez kontrol edin. '
-    '<a href="https://support.anthropic.com/en/articles/8525154-claude-is-providing-incorrect-or-misleading-responses-what-s-going-on" '
+    '<a href="https://ai.google.dev/gemini-api/docs" '
     'target="_blank" rel="noopener noreferrer">Daha fazla bilgi</a>.'
     '</span>'
 )
@@ -1875,7 +1961,7 @@ def ask():
     if MAINTENANCE_MODE and not is_admin_test:
         return jsonify({"reply": MAINTENANCE_MESSAGE, "maintenance": True}), 200, cors_headers
 
-    if GOOGLE_LOGIN_ENABLED and not is_admin_test and not session.get('google_user'):
+    if GOOGLE_LOGIN_ENABLED and not is_admin_test and not (session.get('google_user') or session.get('local_user')):
         current_count = session.get('guest_message_count', 0)
         if current_count >= GUEST_MESSAGE_LIMIT:
             return jsonify({
