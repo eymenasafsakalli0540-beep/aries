@@ -91,6 +91,27 @@ def _binding(name):
         return None
 
 
+def record_visitor(ip, device, question, email=None):
+    """Son ziyaretçiler listesini panelin okuyabilmesi için KV'ye yazar."""
+    try:
+        kv = _kv()
+        raw = str(run_sync(kv.get("aries:visitors")) or "[]")
+        visitors = json.loads(raw)
+        if not isinstance(visitors, list):
+            visitors = []
+        visitors.append({
+            "id": uuid.uuid4().hex,
+            "ip": ip or "",
+            "device": device or "",
+            "email": email or "",
+            "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            "question": (question or "")[:300],
+        })
+        run_sync(kv.put("aries:visitors", json.dumps(visitors[-80:], ensure_ascii=False)))
+    except Exception:
+        pass
+
+
 def notify_email(subject, body):
     """Yeni soru bildirimini Selam'da kullanılan Apps Script üzerinden gönderir."""
     url = _binding("APPSCRIPT_URL")
@@ -1982,6 +2003,9 @@ def ask():
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     user_ip = request.remote_addr
     user_key = get_user_key()
+    device_id = (payload.get("device_id") or "").strip()
+    active_user = session.get('google_user') or session.get('local_user') or {}
+    record_visitor(user_ip, device_id, raw_message, email=active_user.get('email', ''))
 
     def save_log(status_msg):
         try:
