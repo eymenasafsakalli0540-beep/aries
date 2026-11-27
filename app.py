@@ -224,7 +224,7 @@ AGENT_SECRET = os.environ.get("AGENT_SECRET", "")
 # ⚠️ GÜVENLİK DÜZELTMESİ: panel şifresi artık ortam değişkeninden okunuyor
 # (yoksa eski varsayılana düşer) ve zamanlama saldırılarına karşı
 # hmac.compare_digest ile karşılaştırılıyor.
-ADMIN_PANEL_PASSWORD = os.environ.get("ADMIN_PANEL_PASSWORD", "4235")
+ADMIN_PANEL_PASSWORD = os.environ.get("ADMIN_PANEL_PASSWORD", "")
 
 
 def _secure_compare(a, b):
