@@ -290,28 +290,7 @@ def _save_maintenance_state(is_on):
             os.remove(MAINTENANCE_FILE)
 
 
-RENDER_API_KEY = os.environ.get("RENDER_API_KEY", "")
-RENDER_SERVICE_ID = os.environ.get("RENDER_SERVICE_ID", "srv-d8pfgaj7uimc73a5i2eg")
 ARIES_MAINTENANCE_ENV_KEY = "ARIES_MAINTENANCE"
-
-
-def _set_render_env_maintenance(is_on):
-    if not RENDER_API_KEY:
-        return False
-    try:
-        url = f"https://api.render.com/v1/services/{RENDER_SERVICE_ID}/env-vars/{ARIES_MAINTENANCE_ENV_KEY}"
-        resp = requests.put(
-            url,
-            headers={
-                "Authorization": f"Bearer {RENDER_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={"value": "1" if is_on else "0"},
-            timeout=10,
-        )
-        return resp.status_code < 300
-    except Exception:
-        return False
 
 
 _env_maintenance = os.environ.get(ARIES_MAINTENANCE_ENV_KEY, "")
@@ -1792,14 +1771,12 @@ def get_logs():
     if action == 'maintenance':
         MAINTENANCE_MODE = True
         _save_maintenance_state(True)
-        render_synced = _set_render_env_maintenance(True)
-        return jsonify({"success": True, "maintenance": True, "render_synced": render_synced}), 200, response_headers
+        return jsonify({"success": True, "maintenance": True}), 200, response_headers
 
     if action == 'resume':
         MAINTENANCE_MODE = False
         _save_maintenance_state(False)
-        render_synced = _set_render_env_maintenance(False)
-        return jsonify({"success": True, "maintenance": False, "render_synced": render_synced}), 200, response_headers
+        return jsonify({"success": True, "maintenance": False}), 200, response_headers
 
     if action == 'status':
         return jsonify({"success": True, "maintenance": MAINTENANCE_MODE}), 200, response_headers
